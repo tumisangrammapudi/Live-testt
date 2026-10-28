@@ -1,0 +1,44 @@
+{
+ "id": "/Panic/",
+ "name": "Panic Alert",
+ "short_name": "Panic Alert",
+ "description": "Emergency panic button that alerts your neighbours and emergency contacts with your location.",
+ "start_url": "/Panic/",
+ "scope": "/Panic/",
+ "display": "standalone",
+ "orientation": "portrait",
+ "lang": "en",
+ "dir": "ltr",
+ "categories": [
+  "utilities",
+  "lifestyle"
+ ],
+ "background_color": "#d3202a",
+ "theme_color": "#d3202a",
+ "icons": [
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "maskable"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ]
+}
