@@ -1,32 +1,75 @@
-<!DOCTYPE html><html lang="en"><head> <meta charset="UTF-8"> <meta 
-name="viewport" content="width=device-width, initial-scale=1.0"> <title>My PWA 
-App</title> <link rel="manifest" href="manifest.webmanifest"> <!-- Supabase 
-JavaScript Client --> <script 
-src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
-<body> <h1>My PWA App</h1>  <!-- Action Buttons --> <div style="margin-top: 
-20px;"> <button id="fetch-btn">Load Data from SQL</button> <button 
-id="add-btn">Add Test Record</button> </div>
- <!-- Status / Output Area --> <div id="output" style="margin-top: 20px; 
-white-space: pre-wrap; font-family: monospace;"></div>
- <script> // 1. Replace these with your actual Supabase Project URL and Anon 
-Key from Project Settings > API const SUPABASE_URL = 
-'https://your-project-id.supabase.co'; const SUPABASE_ANON_KEY = 
-'your-anon-key-here'; const supabase = 
-window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
- // 2. Load Data from the 'items' SQL table 
-document.getElementById('fetch-btn').addEventListener('click', async () => { 
-const { data, error } = await supabase.from('items').select('*'); if (error) { 
-document.getElementById('output').textContent = 'Error: ' + error.message; } 
-else { document.getElementById('output').textContent = JSON.stringify(data, 
-null, 2); } });
- // 3. Add a New Record into the 'items' SQL table 
-document.getElementById('add-btn').addEventListener('click', async () => { 
-const { data, error } = await supabase .from('items') .insert([{ name: 'New 
-Item ' + new Date().toLocaleTimeString() }]); if (error) { 
-document.getElementById('output').textContent = 'Error: ' + error.message; } 
-else { document.getElementById('output').textContent = 'Successfully added 
-record to SQL database!'; } });
- // 4. Register Service Worker if ('serviceWorker' in navigator) { 
-navigator.serviceWorker.register('sw.js') .then(() => console.log('Service 
-Worker Registered')) .catch(err => console.log('Service Worker Failed:', err)); 
-} </script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>My PWA App</title>
+ <link rel="manifest" href="manifest.webmanifest">
+ <!-- Supabase JS Client CDN -->
+ <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+ <h1>My PWA App</h1>
+
+ <!-- Action Buttons -->
+ <div style="margin-top: 20px;">
+ <button id="fetch-btn">Load Data from SQL</button>
+ <button id="add-btn">Add Test Record</button>
+ </div>
+
+ <!-- Output Box -->
+ <div id="output" style="margin-top: 20px; white-space: pre-wrap; font-family: 
+monospace;"></div>
+
+ <script>
+ // 1. Supabase Credentials
+ const SUPABASE_URL = 'https://your-project-id.supabase.co';
+ const SUPABASE_ANON_KEY = 'your-anon-key-here';
+ const supabase = window.supabase.createClient(SUPABASE_URL, 
+SUPABASE_ANON_KEY);
+
+ // 2. Fetch Data Button Logic
+ document.getElementById('fetch-btn').addEventListener('click', async () => {
+ const { data, error } = await supabase.from('items').select('*');
+ if (error) {
+ document.getElementById('output').textContent = 'Error: ' + error.message;
+ } else {
+ document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+ }
+ });
+
+ // 3. Add Data Button Logic
+ document.getElementById('add-btn').addEventListener('click', async () => {
+ const { data, error } = await supabase
+ .from('items')
+ .insert([{ name: 'New Item ' + new Date().toLocaleTimeString() }]);
+ if (error) {
+ document.getElementById('output').textContent = 'Error: ' + error.message;
+ } else {
+ document.getElementById('output').textContent = 'Successfully added record to 
+SQL database!';
+ }
+ });
+
+ // 4. Auto-Updating Service Worker Registration
+ if ('serviceWorker' in navigator) {
+ // Appends dynamic timestamp query string to force browser SW check
+ navigator.serviceWorker.register(`sw.js?v=${Date.now()}`)
+ .then(registration => {
+ console.log('Service Worker registered');
+
+ // Force update check on load
+ registration.update();
+
+ // Detect when a new service worker update takes over
+ navigator.serviceWorker.addEventListener('controllerchange', () => {
+ console.log('New update activated! Reloading for fresh version...');
+ window.location.reload();
+ });
+ })
+ .catch(err => console.log('Service Worker registration failed:', err));
+ }
+ </script>
+</body>
+</html>
+
