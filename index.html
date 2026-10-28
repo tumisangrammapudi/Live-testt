@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111827">
+  <title>Panic Alert — Emergency Help</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #111827;
+      color: #f9fafb;
+      --panel: #1f2937;
+      --muted: #d1d5db;
+      --line: #374151;
+      --blue: #2563eb;
+      --red: #b91c1c;
+      --green: #166534;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; padding: 18px; }
+    main { width: min(100%, 680px); margin: 0 auto; }
+    header, section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    h1 { font-size: clamp(1.5rem, 5vw, 2rem); margin: 0 0 8px; }
+    h2 { font-size: 1.4rem; margin-top: 0; }
+    h3 { margin-bottom: 8px; }
+    p { line-height: 1.55; color: var(--muted); }
+    .small { font-size: .9rem; }
+    .note { background: #111827; border-left: 4px solid #60a5fa; padding: 12px; border-radius: 6px; }
+    .btn {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 13px 16px;
+      border: 1px solid #4b5563;
+      border-radius: 10px;
+      background: #374151;
+      color: white;
+      font: inherit;
+      font-weight: 650;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .btn:focus-visible, button:focus-visible, a:focus-visible {
+      outline: 3px solid #93c5fd;
+      outline-offset: 3px;
+    }
+    .btn.big { background: var(--red); border-color: #ef4444; }
+    .btn.wa { background: #166534; border-color: #22c55e; }
+    .btn.safe { background: var(--green); border-color: #22c55e; }
+    .btn.secondary { background: #1d4ed8; border-color: #60a5fa; }
+    .status { padding: 10px 12px; background: #111827; border-radius: 8px; }
+    .hidden { display: none !important; }
+    label { display: block; margin: 12px 0 6px; font-weight: 600; }
+    input, textarea {
+      display: block; width: 100%; padding: 11px; border-radius: 8px;
+      border: 1px solid #6b7280; background: #111827; color: #f9fafb; font: inherit;
+    }
+    .contact-row { border-top: 1px solid var(--line); padding: 12px 0; }
+    footer { color: #9ca3af; font-size: .85rem; padding: 8px 2px 24px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Panic Alert</h1>
+    <p>Emergency contact helper. Add your own trusted contacts before relying on this app.</p>
+    <p class="note small"><b>Safety note:</b> This web app can open your phone's dialler, WhatsApp or SMS app. It cannot confirm that a call was answered or guarantee that a message was delivered.</p>
+  </header>
+
+  <section id="setupView">
+    <h2>Set up your contacts</h2>
+    <p>Contacts are saved only in this browser on this device. Keep a separate copy of important numbers.</p>
+    <label for="personName">Your name (optional)</label>
+    <input id="personName" autocomplete="name" placeholder="Your name">
+    <label for="neighbourName">Trusted neighbour / contact name</label>
+    <input id="neighbourName" autocomplete="off" placeholder="e.g. Sam">
+    <label for="neighbourPhone">Phone number with country code</label>
+    <input id="neighbourPhone" type="tel" autocomplete="tel" placeholder="e.g. +267 7X XXX XXX">
+    <button class="btn secondary" id="addNeighbour" type="button">Add trusted contact</button>
+
+    <div id="neighbourList" aria-live="polite"></div>
+
+    <label for="emergencyName">Emergency service / other contact name (optional)</label>
+    <input id="emergencyName" placeholder="e.g. Local emergency number">
+    <label for="emergencyPhone">Emergency phone number (optional)</label>
+    <input id="emergencyPhone" type="tel" placeholder="Include country code if needed">
+    <button class="btn" id="addEmergency" type="button">Add emergency number</button>
+    <div id="emergencyList" aria-live="polite"></div>
+
+    <label for="alertMode">Alert option</label>
+    <select id="alertMode" style="display:block;width:100%;padding:11px;border-radius:8px;border:1px solid #6b7280;background:#111827;color:#f9fafb;font:inherit">
+      <option value="neighbours">Option 1 — Neighbour Alert</option>
+      <option value="combined">Option 2 — Neighbours + Emergency Contacts</option>
+      <option value="services">Option 3 — Emergency Services First</option>
+    </select>
+    <p class="small">For Option 3, add service numbers below using names such as “Police”, “Fire Department”, or “Ambulance”. Confirm numbers for your own town or country before testing.</p>
+
+    <label for="customMessage">Alert message</label>
+    <textarea id="customMessage" rows="3">I may need help. Please try calling me and check on my safety.</textarea>
+    <button class="btn big" id="startAlert" type="button">Start test alert</button>
+    <p class="small">For your first test, use consenting contacts and tell them in advance that this is a test. Do not test by calling emergency services unless they explicitly permit it.</p>
+  </section>
+
+  <section id="alertView" class="hidden" aria-live="polite">
+    <h2 id="aTitle">Alert active</h2>
+    <p id="locStatus" class="status">Location not requested yet.</p>
+    <p><b>Step 1: Call for help.</b> Start with the first trusted contact. If they do not answer, return here and try another contact.</p>
+    <div id="alertBody"></div>
+    <button class="btn safe" id="safeBtn" type="button">I'm safe — cancel alert</button>
+  </section>
+
+  <footer>
+    Offline support is limited to this page and resources cached by the browser. Calls, SMS, WhatsApp and remote alerts still require the relevant phone features and communication service. Location requires permission and may be unavailable indoors or offline.
+  </footer>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  const STORAGE_KEY = "panic-alert-test-contacts-v1";
+  let sirenAudio = null;
+  let sirenTimer = null;
+  let buzzTimer = null;
+  let latestMapLink = "";
+  let alertIsActive = false;
+
+  const $ = (id) => document.getElementById(id);
+  const escapeHTML = (value) => String(value == null ? "" : value).replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[ch]);
+
+  function normalizePhone(value) {
+    // Keep digits and a leading plus only; this is for links, not validation.
+    const trimmed = String(value || "").trim();
+    const digits = trimmed.replace(/\D/g, "");
+    return (trimmed.startsWith("+") ? "+" : "") + digits;
+  }
+
+  function readState() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      return {
+        personName: typeof saved.personName === "string" ? saved.personName : "",
+        message: typeof saved.message === "string" ? saved.message : "I may need help. Please try calling me and check on my safety.",
+        neighbours: Array.isArray(saved.neighbours) ? saved.neighbours : [],
+        numbers: Array.isArray(saved.numbers) ? saved.numbers : [],
+        alertMode: ["neighbours", "combined", "services"].includes(saved.alertMode) ? saved.alertMode : "neighbours"
+      };
+    } catch (e) {
+      return { personName: "", message: "I may need help. Please try calling me and check on my safety.", neighbours: [], numbers: [], alertMode: "neighbours" };
+    }
+  }
+
+  let state = readState();
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+      alert("Your browser could not save these contacts. They may be lost when you close this page.");
+    }
+  }
+
+  function telHref(phone) {
+    return "tel:" + normalizePhone(phone);
+  }
+
+  function buildAlertMessage() {
+    const parts = [];
+    if (state.personName.trim()) parts.push("Alert from " + state.personName.trim() + ".");
+    parts.push(state.message.trim() || "I may need help. Please try calling me and check on my safety.");
+    if (latestMapLink) parts.push("My last location: " + latestMapLink);
+    return parts.join("\n\n");
+  }
+
+  function smsHref(contacts) {
+    const phones = contacts.map((c) => normalizePhone(c.phone)).filter(Boolean);
+    // SMS URI recipient syntax varies between operating systems and messaging apps.
+    const recipientString = phones.join(",");
+    const body = encodeURIComponent(buildAlertMessage());
+    return "sms:" + recipientString + "?body=" + body;
+  }
+
+  function renderContactLists() {
+    $("neighbourList").innerHTML = state.neighbours.length
+      ? "<h3>Trusted contacts</h3>" + state.neighbours.map((n, i) =>
+          '<div class="contact-row">' + escapeHTML(n.name) + " — " + escapeHTML(n.phone) +
+          ' <button class="btn" type="button" data-remove-neighbour="' + i + '">Remove</button></div>'
+        ).join("")
+      : '<p class="small">No trusted contacts added yet.</p>';
+
+    $("emergencyList").innerHTML = state.numbers.length
+      ? "<h3>Emergency numbers</h3>" + state.numbers.map((n, i) =>
+          '<div class="contact-row">' + escapeHTML(n.name) + " — " + escapeHTML(n.phone) +
+          ' <button class="btn" type="button" data-remove-emergency="' + i + '">Remove</button></div>'
+        ).join("")
+      : "";
+  }
+
+  function addContact(nameInput, phoneInput, collection, fallbackName) {
+    const name = $(nameInput).value.trim() || fallbackName;
+    const phone = $(phoneInput).value.trim();
+    if (!phone || !normalizePhone(phone).replace(/\D/g, "")) {
+      alert("Please enter a valid phone number.");
+      return;
+    }
+    state[collection].push({ name, phone });
+    $(nameInput).value = "";
+    $(phoneInput).value = "";
+    saveState();
+    renderContactLists();
+  }
+
+  function makeButton(label, href, className) {
+    return '<a class="btn ' + className + '" href="' + escapeHTML(href) + '">' + escapeHTML(label) + "</a>";
+  }
+
+  function renderAlert() {
+    const contacts = state.neighbours;
+    const numbers = state.numbers;
+    const allContacts = contacts.concat(numbers);
+    const mode = state.alertMode || "neighbours";
+    let html = "";
+
+    if (mode === "services") {
+      html += "<h3>Step 1: Contact an emergency service</h3>";
+      html += '<p>Choose the relevant service. The call opens in your phone dialler; you must place the call yourself.</p>';
+      if (numbers.length) {
+        html += numbers.map((n, i) => makeButton("Call service / number: " + n.name, telHref(n.phone), "big")).join("");
+        html += '<button class="btn secondary" id="serviceUnreachableBtn" type="button">The service could not be reached</button>';
+        html += '<div id="fallbackContacts" class="hidden"><h3>Next: Call a trusted contact</h3><p>Choose a trusted contact to call next. The app cannot detect call failure automatically; use this only after you confirm the service could not be reached.</p>';
+        html += contacts.length ? contacts.map((n) => makeButton("Call trusted contact: " + n.name, telHref(n.phone), "")).join("") : '<p class="note">No trusted contacts saved. Cancel the alert and add trusted contacts.</p>';
+        html += '</div>';
+      } else {
+        html += '<p class="note">No emergency service numbers have been added. Cancel this screen and add verified local numbers with names such as Police, Fire Department, or Ambulance before testing Option 3.</p>';
+      }
+      if (contacts.length) {
+        html += '<details><summary>Trusted contacts (separate section)</summary>';
+        html += contacts.map((n) => makeButton("Call trusted contact: " + n.name, telHref(n.phone), "")).join("") + '</details>';
+      }
+    } else {
+      html += '<h3>Step 1: Call for help</h3><p>Calls open your phone dialler and require you to place the call.</p>';
+      if (contacts.length) {
+        html += makeButton("Call first: " + contacts[0].name, telHref(contacts[0].phone), "big");
+        if (contacts.length > 1) html += '<h3>Other trusted contacts</h3>' + contacts.slice(1).map((n) => makeButton("Call " + n.name, telHref(n.phone), "")).join("");
+      } else {
+        html += '<p class="note">No trusted contacts are registered. Cancel this screen and add contacts before relying on the app.</p>';
+      }
+      if (mode === "combined" && numbers.length) {
+        html += '<h3>Additional emergency contacts</h3>' + numbers.map((n) => makeButton("Call " + n.name, telHref(n.phone), "")).join("");
+      }
+    }
+
+    if (contacts.length) {
+      html += "<h3>WhatsApp (optional)</h3><p>These buttons open chats; they do not automatically send messages or start voice calls. Review before sending.</p>";
+      html += contacts.map((n) => {
+        const digits = normalizePhone(n.phone).replace(/\D/g, "");
+        const url = "https://wa.me/" + digits + "?text=" + encodeURIComponent(buildAlertMessage());
+        return makeButton("Open WhatsApp chat: " + n.name, url, "wa");
+      }).join("");
+    }
+
+    html += '<h3>SMS (optional)</h3><p>Review the recipients and message in your SMS app before sending.</p>';
+    html += makeButton("Prepare SMS to saved contacts", smsHref(allContacts), "");
+    html += '<p class="small">The app cannot confirm whether a call was answered or whether an SMS was delivered.</p>';
+    html += '<button class="btn" id="sirenBtn" type="button">Turn siren off</button>';
+
+    $("alertBody").innerHTML = html;
+    $("alertView").classList.remove("hidden");
+    $("setupView").classList.add("hidden");
+  }
+
+  function startSiren() {
+    stopSiren();
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) {
+        const context = new AudioContextClass();
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        oscillator.type = "sawtooth";
+        oscillator.frequency.value = 880;
+        gain.gain.value = 0.0001;
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+        oscillator.start();
+        sirenAudio = { context, oscillator, gain };
+        let loud = false;
+        sirenTimer = window.setInterval(() => {
+          if (!sirenAudio) return;
+          loud = !loud;
+          sirenAudio.oscillator.frequency.setTargetAtTime(loud ? 880 : 660, sirenAudio.context.currentTime, 0.03);
+          sirenAudio.gain.gain.setTargetAtTime(loud ? 0.08 : 0.0001, sirenAudio.context.currentTime, 0.03);
+        }, 350);
+      }
+    } catch (e) {
+      // Audio may be blocked by browser policy; the rest of the alert remains usable.
+    }
+
+    try {
+      if ("vibrate" in navigator) {
+        navigator.vibrate([500, 200, 500]);
+        buzzTimer = window.setInterval(() => navigator.vibrate([500, 200, 500]), 3000);
+      }
+    } catch (e) {}
+  }
+
+  function stopSiren() {
+    if (sirenTimer) window.clearInterval(sirenTimer);
+    if (buzzTimer) window.clearInterval(buzzTimer);
+    sirenTimer = null;
+    buzzTimer = null;
+    try { if ("vibrate" in navigator) navigator.vibrate(0); } catch (e) {}
+    if (sirenAudio) {
+      try {
+        sirenAudio.gain.gain.setTargetAtTime(0.0001, sirenAudio.context.currentTime, 0.02);
+        sirenAudio.oscillator.stop(sirenAudio.context.currentTime + 0.08);
+        sirenAudio.context.close();
+      } catch (e) {}
+      sirenAudio = null;
+    }
+    const sirenButton = $("sirenBtn");
+    if (sirenButton) sirenButton.textContent = "Siren off";
+  }
+
+  function failLocation() {
+    const status = $("locStatus");
+    if (status) status.textContent = "Location unavailable. You can still call contacts or prepare an SMS without it.";
+    refreshMessageLinks();
+  }
+
+  function refreshMessageLinks() {
+    // Re-rendering ensures any location obtained after the alert started is included.
+    if (alertIsActive) renderAlert();
+  }
+
+  function requestLocation() {
+    latestMapLink = "";
+    $("locStatus").textContent = "Finding your location…";
+    if (!navigator.geolocation) {
+      failLocation();
+      return;
+    }
+    try {
+      navigator.geolocation.getCurrentPosition((position) => {
+        const latitude = position.coords.latitude.toFixed(5);
+        const longitude = position.coords.longitude.toFixed(5);
+        latestMapLink = "https://maps.google.com/?q=" + latitude + "," + longitude;
+        $("locStatus").textContent = "Location found. It will be included in the prepared message. Check it before sending.";
+        refreshMessageLinks();
+      }, failLocation, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
+    } catch (e) {
+      failLocation();
+    }
+  }
+
+  function startAlert() {
+    state.personName = $("personName").value.trim();
+    state.message = $("customMessage").value.trim() || "I may need help. Please try calling me and check on my safety.";
+    state.alertMode = $("alertMode").value;
+    
+    saveState();
+    alertIsActive = true;
+    latestMapLink = "";
+    renderAlert();
+    startSiren();
+    requestLocation();
+  }
+
+  function cancelAlert() {
+    alertIsActive = false;
+    stopSiren();
+    $("alertView").classList.add("hidden");
+    $("setupView").classList.remove("hidden");
+    $("locStatus").textContent = "Location not requested yet.";
+  }
+
+  $("addNeighbour").addEventListener("click", () => addContact("neighbourName", "neighbourPhone", "neighbours", "Trusted contact"));
+  $("addEmergency").addEventListener("click", () => addContact("emergencyName", "emergencyPhone", "numbers", "Emergency contact"));
+  $("startAlert").addEventListener("click", () => {
+    if (!state.neighbours.length && !state.numbers.length) {
+      const proceed = confirm("No contacts are saved. Start the alert screen anyway?");
+      if (!proceed) return;
+    }
+    startAlert();
+  });
+  $("safeBtn").addEventListener("click", cancelAlert);
+  $("alertMode").value = state.alertMode;
+  $("alertMode").addEventListener("change", () => { state.alertMode = $("alertMode").value; saveState(); });
+
+  document.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const removeNeighbour = target.closest("[data-remove-neighbour]");
+    const removeEmergency = target.closest("[data-remove-emergency]");
+    if (removeNeighbour) {
+      state.neighbours.splice(Number(removeNeighbour.dataset.removeNeighbour), 1);
+      saveState();
+      renderContactLists();
+    }
+    if (removeEmergency) {
+      state.numbers.splice(Number(removeEmergency.dataset.removeEmergency), 1);
+      saveState();
+      renderContactLists();
+    }
+    if (target.id === "sirenBtn") stopSiren();
+    if (target.id === "serviceUnreachableBtn") {
+      const fallback = $("fallbackContacts");
+      if (fallback) fallback.classList.remove("hidden");
+      target.textContent = "Trusted contacts shown below";
+      target.disabled = true;
+    }
+  });
+
+  $("personName").value = state.personName;
+  $("customMessage").value = state.message;
+  $("alertMode").value = state.alertMode;
+  renderContactLists();
+
+  // Register the root service worker when available. The site must be HTTPS.
+  if ("serviceWorker" in navigator && location.protocol === "https:") {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(() => {
+        // App remains usable online if service-worker registration fails.
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>

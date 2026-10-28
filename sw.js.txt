@@ -1,0 +1,82 @@
+/* Panic Alert service worker
+ * Place this file at the root of the /Panic/ GitHub Pages site.
+ * This provides basic offline caching only; it does not send alerts or place calls.
+ */
+const CACHE_NAME = "panic-alert-cache-live-test-v2";
+const APP_SHELL = [
+  "./",
+  "./index.html"
+];
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(APP_SHELL))
+      .then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(
+        keys
+          .filter((key) => key.startsWith("panic-alert-cache-") && key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
+      ))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener("fetch", (event) => {
+  const request = event.request;
+  const url = new URL(request.url);
+
+  // Only handle same-origin GET requests.
+  if (request.method !== "GET" || url.origin !== self.location.origin) return;
+
+  // For page navigations, try the network first so updates can be received.
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put("./index.html", copy));
+          }
+          return response;
+        })
+        .catch(async () => {
+          return (await caches.match(request)) ||
+                 (await caches.match("./index.html")) ||
+                 new Response("Panic Alert is offline and no cached page is available.", {
+                   status: 503,
+                   headers: { "Content-Type": "text/plain; charset=utf-8" }
+                 });
+        })
+    );
+    return;
+  }
+
+  // For other same-origin files, use the cache when available and save successful responses.
+  event.respondWith(
+    caches.match(request).then(async (cached) => {
+      if (cached) return cached;
+
+      try {
+        const response = await fetch(request);
+        if (response && response.ok) {
+          const copy = response.clone();
+          const cache = await caches.open(CACHE_NAME);
+          await cache.put(request, copy);
+        }
+        return response;
+      } catch (error) {
+        return new Response("This resource is unavailable offline.", {
+          status: 503,
+          headers: { "Content-Type": "text/plain; charset=utf-8" }
+        });
+      }
+    })
+  );
+});
