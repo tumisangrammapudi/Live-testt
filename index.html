@@ -1,442 +1,58 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#111827">
-  <title>Panic Alert — Emergency Help</title>
-  <style>
-    :root {
-      color-scheme: dark;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #111827;
-      color: #f9fafb;
-      --panel: #1f2937;
-      --muted: #d1d5db;
-      --line: #374151;
-      --blue: #2563eb;
-      --red: #b91c1c;
-      --green: #166534;
-    }
-    * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100vh; padding: 18px; }
-    main { width: min(100%, 680px); margin: 0 auto; }
-    header, section {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 16px;
-    }
-    h1 { font-size: clamp(1.5rem, 5vw, 2rem); margin: 0 0 8px; }
-    h2 { font-size: 1.4rem; margin-top: 0; }
-    h3 { margin-bottom: 8px; }
-    p { line-height: 1.55; color: var(--muted); }
-    .small { font-size: .9rem; }
-    .note { background: #111827; border-left: 4px solid #60a5fa; padding: 12px; border-radius: 6px; }
-    .btn {
-      display: block;
-      width: 100%;
-      margin: 10px 0;
-      padding: 13px 16px;
-      border: 1px solid #4b5563;
-      border-radius: 10px;
-      background: #374151;
-      color: white;
-      font: inherit;
-      font-weight: 650;
-      text-align: center;
-      text-decoration: none;
-      cursor: pointer;
-    }
-    .btn:focus-visible, button:focus-visible, a:focus-visible {
-      outline: 3px solid #93c5fd;
-      outline-offset: 3px;
-    }
-    .btn.big { background: var(--red); border-color: #ef4444; }
-    .btn.wa { background: #166534; border-color: #22c55e; }
-    .btn.safe { background: var(--green); border-color: #22c55e; }
-    .btn.secondary { background: #1d4ed8; border-color: #60a5fa; }
-    .status { padding: 10px 12px; background: #111827; border-radius: 8px; }
-    .hidden { display: none !important; }
-    label { display: block; margin: 12px 0 6px; font-weight: 600; }
-    input, textarea {
-      display: block; width: 100%; padding: 11px; border-radius: 8px;
-      border: 1px solid #6b7280; background: #111827; color: #f9fafb; font: inherit;
-    }
-    .contact-row { border-top: 1px solid var(--line); padding: 12px 0; }
-    footer { color: #9ca3af; font-size: .85rem; padding: 8px 2px 24px; line-height: 1.5; }
-  </style>
-</head>
-<body>
-<main>
-  <header>
-    <h1>Panic Alert</h1>
-    <p>Emergency contact helper. Add your own trusted contacts before relying on this app.</p>
-    <p class="note small"><b>Safety note:</b> This web app can open your phone's dialler, WhatsApp or SMS app. It cannot confirm that a call was answered or guarantee that a message was delivered.</p>
-  </header>
-
-  <section id="setupView">
-    <h2>Set up your contacts</h2>
-    <p>Contacts are saved only in this browser on this device. Keep a separate copy of important numbers.</p>
-    <label for="personName">Your name (optional)</label>
-    <input id="personName" autocomplete="name" placeholder="Your name">
-    <label for="neighbourName">Trusted neighbour / contact name</label>
-    <input id="neighbourName" autocomplete="off" placeholder="e.g. Sam">
-    <label for="neighbourPhone">Phone number with country code</label>
-    <input id="neighbourPhone" type="tel" autocomplete="tel" placeholder="e.g. +267 7X XXX XXX">
-    <button class="btn secondary" id="addNeighbour" type="button">Add trusted contact</button>
-
-    <div id="neighbourList" aria-live="polite"></div>
-
-    <label for="emergencyName">Emergency service / other contact name (optional)</label>
-    <input id="emergencyName" placeholder="e.g. Local emergency number">
-    <label for="emergencyPhone">Emergency phone number (optional)</label>
-    <input id="emergencyPhone" type="tel" placeholder="Include country code if needed">
-    <button class="btn" id="addEmergency" type="button">Add emergency number</button>
-    <div id="emergencyList" aria-live="polite"></div>
-
-    <label for="alertMode">Alert option</label>
-    <select id="alertMode" style="display:block;width:100%;padding:11px;border-radius:8px;border:1px solid #6b7280;background:#111827;color:#f9fafb;font:inherit">
-      <option value="neighbours">Option 1 — Neighbour Alert</option>
-      <option value="combined">Option 2 — Neighbours + Emergency Contacts</option>
-      <option value="services">Option 3 — Emergency Services First</option>
-    </select>
-    <p class="small">For Option 3, add service numbers below using names such as “Police”, “Fire Department”, or “Ambulance”. Confirm numbers for your own town or country before testing.</p>
-
-    <label for="customMessage">Alert message</label>
-    <textarea id="customMessage" rows="3">I may need help. Please try calling me and check on my safety.</textarea>
-    <button class="btn big" id="startAlert" type="button">Start test alert</button>
-    <p class="small">For your first test, use consenting contacts and tell them in advance that this is a test. Do not test by calling emergency services unless they explicitly permit it.</p>
-  </section>
-
-  <section id="alertView" class="hidden" aria-live="polite">
-    <h2 id="aTitle">Alert active</h2>
-    <p id="locStatus" class="status">Location not requested yet.</p>
-    <p><b>Step 1: Call for help.</b> Start with the first trusted contact. If they do not answer, return here and try another contact.</p>
-    <div id="alertBody"></div>
-    <button class="btn safe" id="safeBtn" type="button">I'm safe — cancel alert</button>
-  </section>
-
-  <footer>
-    Offline support is limited to this page and resources cached by the browser. Calls, SMS, WhatsApp and remote alerts still require the relevant phone features and communication service. Location requires permission and may be unavailable indoors or offline.
-  </footer>
-</main>
-
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#111827">
+<title>Panic Alert</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#111827;color:#f9fafb;--panel:#1f2937;--line:#374151;--muted:#cbd5e1;--blue:#1d4ed8;--red:#b91c1c;--green:#166534}*{box-sizing:border-box}body{margin:0;padding:14px}main{max-width:760px;margin:auto}header,section{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px}h1{margin:0 0 6px}h2{margin-top:0}p{line-height:1.5;color:var(--muted)}label{display:block;margin:12px 0 5px;font-weight:650}input,textarea,select{width:100%;padding:11px;border-radius:9px;border:1px solid #64748b;background:#111827;color:white;font:inherit}.btn{display:block;width:100%;padding:12px;margin:9px 0;border:1px solid #64748b;border-radius:10px;background:#374151;color:white;font:inherit;font-weight:650;text-align:center;text-decoration:none;cursor:pointer}.primary{background:var(--blue)}.danger{background:var(--red)}.safe{background:var(--green)}.hidden{display:none!important}.note,.status{background:#111827;padding:12px;border-radius:8px;border-left:4px solid #60a5fa}.small{font-size:.9rem}.item{border-top:1px solid var(--line);padding:12px 0}.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}.tag{font-size:.85rem;border:1px solid #64748b;border-radius:999px;padding:3px 8px;display:inline-block}footer{color:#94a3b8;font-size:.85rem;padding:8px 2px 24px}
+</style>
+</head><body><main>
+<header><h1>Panic Alert</h1><p>Emergency assistance and contact management.</p><p class="note small">Calls open your phone dialler and require your action. The app cannot detect whether a call was answered or guarantee message delivery. Keep emergency calling available if the server is temporarily offline.</p><div id="connection" class="status">Not connected</div></header>
+<section id="configView"><h2>Connect to your Panic Alert server</h2><p>Enter your Supabase Project URL and publishable/anon key. These are client-side values; never enter a service-role or secret key here.</p><label for="projectUrl">Project URL</label><input id="projectUrl" placeholder="https://your-project.supabase.co" autocomplete="url"><label for="anonKey">Publishable / anon key</label><input id="anonKey" placeholder="Supabase publishable key"><button class="btn primary" id="saveConfig">Connect</button></section>
+<section id="authView" class="hidden"><h2>Sign in</h2><label for="email">Email</label><input id="email" type="email" autocomplete="username"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password"><button class="btn primary" id="signIn">Sign in</button><button class="btn" id="forgot">Forgot password?</button><div id="authMessage" class="status" aria-live="polite"></div><p class="small">Client accounts are created by authorized administrators. Public registration is disabled.</p></section>
+<section id="appView" class="hidden"><div class="row"><h2 id="welcome">Panic Alert</h2><button class="btn" id="signOut">Sign out</button></div><p id="roleStatus" class="status"></p><div id="passwordChange" class="hidden"><h3>Change your password</h3><label for="newPassword">New password (at least 10 characters)</label><input id="newPassword" type="password" autocomplete="new-password"><button class="btn primary" id="changePassword">Update password</button></div>
+<h3>Emergency Contacts</h3><label for="personName">Your name (optional)</label><input id="personName"><div class="row"><div><label for="contactName">Contact name</label><input id="contactName" placeholder="Trusted neighbour / Police"></div><div><label for="contactPhone">Phone number</label><input id="contactPhone" type="tel" placeholder="+267..."></div></div><label for="contactType">Contact type</label><select id="contactType"><option value="neighbour">Trusted neighbour</option><option value="emergency">Emergency contact/service</option><option value="police">Police</option><option value="fire">Fire Department</option><option value="ambulance">Ambulance</option></select><button class="btn" id="addContact">Add emergency contact</button><div id="contactsList"></div>
+<label for="alertMode">Alert mode</label><select id="alertMode"><option value="neighbours">1 — Neighbour Alert</option><option value="combined">2 — Neighbours + Emergency Contacts</option><option value="services">3 — Emergency Services First</option></select><label for="alertMessage">Alert message</label><textarea id="alertMessage" rows="3">I may need help. Please call me and check on my safety.</textarea><button class="btn danger" id="startAlert">Start alert</button><div id="alertPanel" class="hidden"><h3>Choose who to call</h3><p id="locationStatus">Location not requested.</p><div id="callOptions"></div><button class="btn" id="getLocation">Add current location to message</button><button class="btn safe" id="stopAlert">I'm safe — close alert</button></div>
+<h3>My Dependents</h3><p>Only you can manage your dependents. The main administrator has view-only access.</p><div class="row"><div><label for="depName">Dependent name</label><input id="depName"></div><div><label for="depPhone">Phone number</label><input id="depPhone" type="tel"></div></div><button class="btn" id="addDependent">Add dependent</button><div id="dependentsList"></div>
+<h3>Password recovery</h3><p>If you have forgotten your password, submit a request for the main administrator to review. The actual reset is completed through Supabase's secure email recovery flow.</p><button class="btn" id="recoveryRequest">Notify main administrator: I forgot my password</button><div id="recoveryStatus" class="status"></div>
+<div id="adminPanel" class="hidden"><hr><h2>Administration</h2><p>Server-side permissions still apply. Second administrators cannot suspend clients or view dependents belonging to other clients.</p><div id="adminControls" class="hidden"><h3>Create client / promote second administrator</h3><label for="newEmail">Account email</label><input id="newEmail" type="email"><label for="newDisplayName">Display name</label><input id="newDisplayName"><label for="newUserPassword">Initial password (share privately)</label><input id="newUserPassword" type="password" autocomplete="new-password"><label for="newRole">Role to assign</label><select id="newRole"><option value="client">Client</option><option value="admin">Second administrator</option></select><button class="btn primary" id="createUser">Create account / promote</button><div id="createStatus" class="status"></div></div><h3>Clients and administrators</h3><div id="profilesList"></div><div id="adminDependents"></div><h3>Password recovery requests</h3><div id="adminRecovery"></div></div>
+</section><footer>Offline support is limited to the cached emergency interface. Login, shared contacts, dependent records and recovery requests require internet access. Do not use unverified emergency numbers.</footer></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-(function () {
-  "use strict";
-
-  const STORAGE_KEY = "panic-alert-test-contacts-v1";
-  let sirenAudio = null;
-  let sirenTimer = null;
-  let buzzTimer = null;
-  let latestMapLink = "";
-  let alertIsActive = false;
-
-  const $ = (id) => document.getElementById(id);
-  const escapeHTML = (value) => String(value == null ? "" : value).replace(/[&<>"']/g, (ch) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-  })[ch]);
-
-  function normalizePhone(value) {
-    // Keep digits and a leading plus only; this is for links, not validation.
-    const trimmed = String(value || "").trim();
-    const digits = trimmed.replace(/\D/g, "");
-    return (trimmed.startsWith("+") ? "+" : "") + digits;
-  }
-
-  function readState() {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-      return {
-        personName: typeof saved.personName === "string" ? saved.personName : "",
-        message: typeof saved.message === "string" ? saved.message : "I may need help. Please try calling me and check on my safety.",
-        neighbours: Array.isArray(saved.neighbours) ? saved.neighbours : [],
-        numbers: Array.isArray(saved.numbers) ? saved.numbers : [],
-        alertMode: ["neighbours", "combined", "services"].includes(saved.alertMode) ? saved.alertMode : "neighbours"
-      };
-    } catch (e) {
-      return { personName: "", message: "I may need help. Please try calling me and check on my safety.", neighbours: [], numbers: [], alertMode: "neighbours" };
-    }
-  }
-
-  let state = readState();
-
-  function saveState() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (e) {
-      alert("Your browser could not save these contacts. They may be lost when you close this page.");
-    }
-  }
-
-  function telHref(phone) {
-    return "tel:" + normalizePhone(phone);
-  }
-
-  function buildAlertMessage() {
-    const parts = [];
-    if (state.personName.trim()) parts.push("Alert from " + state.personName.trim() + ".");
-    parts.push(state.message.trim() || "I may need help. Please try calling me and check on my safety.");
-    if (latestMapLink) parts.push("My last location: " + latestMapLink);
-    return parts.join("\n\n");
-  }
-
-  function smsHref(contacts) {
-    const phones = contacts.map((c) => normalizePhone(c.phone)).filter(Boolean);
-    // SMS URI recipient syntax varies between operating systems and messaging apps.
-    const recipientString = phones.join(",");
-    const body = encodeURIComponent(buildAlertMessage());
-    return "sms:" + recipientString + "?body=" + body;
-  }
-
-  function renderContactLists() {
-    $("neighbourList").innerHTML = state.neighbours.length
-      ? "<h3>Trusted contacts</h3>" + state.neighbours.map((n, i) =>
-          '<div class="contact-row">' + escapeHTML(n.name) + " — " + escapeHTML(n.phone) +
-          ' <button class="btn" type="button" data-remove-neighbour="' + i + '">Remove</button></div>'
-        ).join("")
-      : '<p class="small">No trusted contacts added yet.</p>';
-
-    $("emergencyList").innerHTML = state.numbers.length
-      ? "<h3>Emergency numbers</h3>" + state.numbers.map((n, i) =>
-          '<div class="contact-row">' + escapeHTML(n.name) + " — " + escapeHTML(n.phone) +
-          ' <button class="btn" type="button" data-remove-emergency="' + i + '">Remove</button></div>'
-        ).join("")
-      : "";
-  }
-
-  function addContact(nameInput, phoneInput, collection, fallbackName) {
-    const name = $(nameInput).value.trim() || fallbackName;
-    const phone = $(phoneInput).value.trim();
-    if (!phone || !normalizePhone(phone).replace(/\D/g, "")) {
-      alert("Please enter a valid phone number.");
-      return;
-    }
-    state[collection].push({ name, phone });
-    $(nameInput).value = "";
-    $(phoneInput).value = "";
-    saveState();
-    renderContactLists();
-  }
-
-  function makeButton(label, href, className) {
-    return '<a class="btn ' + className + '" href="' + escapeHTML(href) + '">' + escapeHTML(label) + "</a>";
-  }
-
-  function renderAlert() {
-    const contacts = state.neighbours;
-    const numbers = state.numbers;
-    const allContacts = contacts.concat(numbers);
-    const mode = state.alertMode || "neighbours";
-    let html = "";
-
-    if (mode === "services") {
-      html += "<h3>Step 1: Contact an emergency service</h3>";
-      html += '<p>Choose the relevant service. The call opens in your phone dialler; you must place the call yourself.</p>';
-      if (numbers.length) {
-        html += numbers.map((n, i) => makeButton("Call service / number: " + n.name, telHref(n.phone), "big")).join("");
-        html += '<button class="btn secondary" id="serviceUnreachableBtn" type="button">The service could not be reached</button>';
-        html += '<div id="fallbackContacts" class="hidden"><h3>Next: Call a trusted contact</h3><p>Choose a trusted contact to call next. The app cannot detect call failure automatically; use this only after you confirm the service could not be reached.</p>';
-        html += contacts.length ? contacts.map((n) => makeButton("Call trusted contact: " + n.name, telHref(n.phone), "")).join("") : '<p class="note">No trusted contacts saved. Cancel the alert and add trusted contacts.</p>';
-        html += '</div>';
-      } else {
-        html += '<p class="note">No emergency service numbers have been added. Cancel this screen and add verified local numbers with names such as Police, Fire Department, or Ambulance before testing Option 3.</p>';
-      }
-      if (contacts.length) {
-        html += '<details><summary>Trusted contacts (separate section)</summary>';
-        html += contacts.map((n) => makeButton("Call trusted contact: " + n.name, telHref(n.phone), "")).join("") + '</details>';
-      }
-    } else {
-      html += '<h3>Step 1: Call for help</h3><p>Calls open your phone dialler and require you to place the call.</p>';
-      if (contacts.length) {
-        html += makeButton("Call first: " + contacts[0].name, telHref(contacts[0].phone), "big");
-        if (contacts.length > 1) html += '<h3>Other trusted contacts</h3>' + contacts.slice(1).map((n) => makeButton("Call " + n.name, telHref(n.phone), "")).join("");
-      } else {
-        html += '<p class="note">No trusted contacts are registered. Cancel this screen and add contacts before relying on the app.</p>';
-      }
-      if (mode === "combined" && numbers.length) {
-        html += '<h3>Additional emergency contacts</h3>' + numbers.map((n) => makeButton("Call " + n.name, telHref(n.phone), "")).join("");
-      }
-    }
-
-    if (contacts.length) {
-      html += "<h3>WhatsApp (optional)</h3><p>These buttons open chats; they do not automatically send messages or start voice calls. Review before sending.</p>";
-      html += contacts.map((n) => {
-        const digits = normalizePhone(n.phone).replace(/\D/g, "");
-        const url = "https://wa.me/" + digits + "?text=" + encodeURIComponent(buildAlertMessage());
-        return makeButton("Open WhatsApp chat: " + n.name, url, "wa");
-      }).join("");
-    }
-
-    html += '<h3>SMS (optional)</h3><p>Review the recipients and message in your SMS app before sending.</p>';
-    html += makeButton("Prepare SMS to saved contacts", smsHref(allContacts), "");
-    html += '<p class="small">The app cannot confirm whether a call was answered or whether an SMS was delivered.</p>';
-    html += '<button class="btn" id="sirenBtn" type="button">Turn siren off</button>';
-
-    $("alertBody").innerHTML = html;
-    $("alertView").classList.remove("hidden");
-    $("setupView").classList.add("hidden");
-  }
-
-  function startSiren() {
-    stopSiren();
-    try {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (AudioContextClass) {
-        const context = new AudioContextClass();
-        const oscillator = context.createOscillator();
-        const gain = context.createGain();
-        oscillator.type = "sawtooth";
-        oscillator.frequency.value = 880;
-        gain.gain.value = 0.0001;
-        oscillator.connect(gain);
-        gain.connect(context.destination);
-        oscillator.start();
-        sirenAudio = { context, oscillator, gain };
-        let loud = false;
-        sirenTimer = window.setInterval(() => {
-          if (!sirenAudio) return;
-          loud = !loud;
-          sirenAudio.oscillator.frequency.setTargetAtTime(loud ? 880 : 660, sirenAudio.context.currentTime, 0.03);
-          sirenAudio.gain.gain.setTargetAtTime(loud ? 0.08 : 0.0001, sirenAudio.context.currentTime, 0.03);
-        }, 350);
-      }
-    } catch (e) {
-      // Audio may be blocked by browser policy; the rest of the alert remains usable.
-    }
-
-    try {
-      if ("vibrate" in navigator) {
-        navigator.vibrate([500, 200, 500]);
-        buzzTimer = window.setInterval(() => navigator.vibrate([500, 200, 500]), 3000);
-      }
-    } catch (e) {}
-  }
-
-  function stopSiren() {
-    if (sirenTimer) window.clearInterval(sirenTimer);
-    if (buzzTimer) window.clearInterval(buzzTimer);
-    sirenTimer = null;
-    buzzTimer = null;
-    try { if ("vibrate" in navigator) navigator.vibrate(0); } catch (e) {}
-    if (sirenAudio) {
-      try {
-        sirenAudio.gain.gain.setTargetAtTime(0.0001, sirenAudio.context.currentTime, 0.02);
-        sirenAudio.oscillator.stop(sirenAudio.context.currentTime + 0.08);
-        sirenAudio.context.close();
-      } catch (e) {}
-      sirenAudio = null;
-    }
-    const sirenButton = $("sirenBtn");
-    if (sirenButton) sirenButton.textContent = "Siren off";
-  }
-
-  function failLocation() {
-    const status = $("locStatus");
-    if (status) status.textContent = "Location unavailable. You can still call contacts or prepare an SMS without it.";
-    refreshMessageLinks();
-  }
-
-  function refreshMessageLinks() {
-    // Re-rendering ensures any location obtained after the alert started is included.
-    if (alertIsActive) renderAlert();
-  }
-
-  function requestLocation() {
-    latestMapLink = "";
-    $("locStatus").textContent = "Finding your location…";
-    if (!navigator.geolocation) {
-      failLocation();
-      return;
-    }
-    try {
-      navigator.geolocation.getCurrentPosition((position) => {
-        const latitude = position.coords.latitude.toFixed(5);
-        const longitude = position.coords.longitude.toFixed(5);
-        latestMapLink = "https://maps.google.com/?q=" + latitude + "," + longitude;
-        $("locStatus").textContent = "Location found. It will be included in the prepared message. Check it before sending.";
-        refreshMessageLinks();
-      }, failLocation, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
-    } catch (e) {
-      failLocation();
-    }
-  }
-
-  function startAlert() {
-    state.personName = $("personName").value.trim();
-    state.message = $("customMessage").value.trim() || "I may need help. Please try calling me and check on my safety.";
-    state.alertMode = $("alertMode").value;
-    
-    saveState();
-    alertIsActive = true;
-    latestMapLink = "";
-    renderAlert();
-    startSiren();
-    requestLocation();
-  }
-
-  function cancelAlert() {
-    alertIsActive = false;
-    stopSiren();
-    $("alertView").classList.add("hidden");
-    $("setupView").classList.remove("hidden");
-    $("locStatus").textContent = "Location not requested yet.";
-  }
-
-  $("addNeighbour").addEventListener("click", () => addContact("neighbourName", "neighbourPhone", "neighbours", "Trusted contact"));
-  $("addEmergency").addEventListener("click", () => addContact("emergencyName", "emergencyPhone", "numbers", "Emergency contact"));
-  $("startAlert").addEventListener("click", () => {
-    if (!state.neighbours.length && !state.numbers.length) {
-      const proceed = confirm("No contacts are saved. Start the alert screen anyway?");
-      if (!proceed) return;
-    }
-    startAlert();
-  });
-  $("safeBtn").addEventListener("click", cancelAlert);
-  $("alertMode").value = state.alertMode;
-  $("alertMode").addEventListener("change", () => { state.alertMode = $("alertMode").value; saveState(); });
-
-  document.addEventListener("click", (event) => {
-    const target = event.target;
-    if (!(target instanceof Element)) return;
-
-    const removeNeighbour = target.closest("[data-remove-neighbour]");
-    const removeEmergency = target.closest("[data-remove-emergency]");
-    if (removeNeighbour) {
-      state.neighbours.splice(Number(removeNeighbour.dataset.removeNeighbour), 1);
-      saveState();
-      renderContactLists();
-    }
-    if (removeEmergency) {
-      state.numbers.splice(Number(removeEmergency.dataset.removeEmergency), 1);
-      saveState();
-      renderContactLists();
-    }
-    if (target.id === "sirenBtn") stopSiren();
-    if (target.id === "serviceUnreachableBtn") {
-      const fallback = $("fallbackContacts");
-      if (fallback) fallback.classList.remove("hidden");
-      target.textContent = "Trusted contacts shown below";
-      target.disabled = true;
-    }
-  });
-
-  $("personName").value = state.personName;
-  $("customMessage").value = state.message;
-  $("alertMode").value = state.alertMode;
-  renderContactLists();
-
-  // Register the root service worker when available. The site must be HTTPS.
-  if ("serviceWorker" in navigator && location.protocol === "https:") {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./sw.js").catch(() => {
-        // App remains usable online if service-worker registration fails.
-      });
-    });
-  }
+(()=>{'use strict';
+const $=id=>document.getElementById(id), CFG='panic-alert-supabase-config-v1', LOCAL='panic-alert-emergency-local-v1';let sb=null,user=null,profile=null,contacts=[],dependents=[],locationLink='',alertActive=false;
+const escapeHTML=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function msg(id,t){$(id).textContent=t}
+function show(view){['configView','authView','appView'].forEach(x=>$(x).classList.toggle('hidden',x!==view))}
+function localRead(){try{return JSON.parse(localStorage.getItem(LOCAL)||'{"personName":"","contacts":[],"mode":"neighbours","message":"I may need help. Please call me and check on my safety."}')}catch{return {personName:'',contacts:[],mode:'neighbours',message:'I may need help. Please call me and check on my safety.'}}}
+function localSave(){localStorage.setItem(LOCAL,JSON.stringify({personName:$('personName').value,contacts,mode:$('alertMode').value,message:$('alertMessage').value}))}
+async function connect(url,key){if(!window.supabase){msg('connection','Supabase library did not load. Check your internet connection.');return}sb=window.supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});const {data,error}=await sb.auth.getSession();if(error)throw error;msg('connection','Supabase connected.');$('configView').classList.add('hidden');if(data.session)await loadApp(data.session.user);else show('authView');sb.auth.onAuthStateChange((event,session)=>{setTimeout(async()=>{if(session)await loadApp(session.user);else{user=null;profile=null;show('authView')}},0)})}
+async function loadProfile(){const {data,error}=await sb.from('profiles').select('id,display_name,role,must_change_password').eq('id',user.id).single();if(error)throw error;profile=data}
+async function loadApp(authUser){user=authUser;try{await loadProfile();$('welcome').textContent='Welcome'+(profile.display_name?' '+profile.display_name:'');msg('roleStatus','Role: '+profile.role.replace('_',' '));$('passwordChange').classList.toggle('hidden',!profile.must_change_password);$('adminPanel').classList.toggle('hidden',!['admin','main_admin'].includes(profile.role));$('adminControls').classList.toggle('hidden',!['admin','main_admin'].includes(profile.role));show('appView');await loadContacts();await loadDependents();if(['admin','main_admin'].includes(profile.role))await loadAdmin()}catch(e){show('authView');msg('authMessage','Could not load your profile: '+e.message+'. Ask the main administrator to check your account setup.')}}
+async function loadContacts(){const {data,error}=await sb.from('emergency_contacts').select('*').eq('client_id',user.id).order('created_at');if(error)throw error;contacts=data||[];renderContacts()}
+function renderContacts(){const rows=contacts.map(c=>`<div class="item"><b>${escapeHTML(c.name)}</b> — ${escapeHTML(c.phone)} <span class="tag">${escapeHTML(c.contact_type)}</span><button class="btn" data-delete-contact="${c.id}">Remove</button></div>`).join('');$('contactsList').innerHTML=rows||'<p>No server-saved contacts yet.</p>'}
+async function loadDependents(){const {data,error}=await sb.from('dependents').select('*').order('created_at');if(error)throw error;dependents=data||[];renderDependents()}
+function renderDependents(){ $('dependentsList').innerHTML=dependents.map(d=>`<div class="item"><b>${escapeHTML(d.name)}</b> — ${escapeHTML(d.phone)} <button class="btn" data-edit-dep="${d.id}">Edit</button><button class="btn" data-delete-dep="${d.id}">Remove</button></div>`).join('')||'<p>No dependents added.</p>'; }
+async function loadAdmin(){const {data,error}=await sb.from('profiles').select('id,display_name,role,created_at').order('created_at');if(error)throw error;const list=(data||[]).filter(p=>p.role!=='main_admin'||profile.role==='main_admin');$('profilesList').innerHTML=list.map(p=>`<div class="item"><b>${escapeHTML(p.display_name||'(No display name)')}</b> — ${escapeHTML(p.role)}<br><span class="small">${profile.role==='main_admin'?escapeHTML(p.id):'Account protected'}</span>${profile.role==='main_admin'&&p.role==='client'?`<button class="btn" data-suspend="${p.id}">Suspend client</button>`:''}</div>`).join('')||'<p>No accounts found.</p>';
+if(profile.role==='main_admin'){const {data:deps}=await sb.from('dependents').select('id,client_id,name,phone,created_at').order('created_at');$('adminDependents').innerHTML='<h3>Dependents (view only)</h3>'+(deps||[]).map(d=>`<div class="item">${escapeHTML(d.name)} — ${escapeHTML(d.phone)} <span class="small">Client: ${escapeHTML(d.client_id)}</span></div>`).join('');const {data:reqs}=await sb.from('password_recovery_requests').select('*').order('created_at',{ascending:false});$('adminRecovery').innerHTML=(reqs||[]).map(r=>`<div class="item">${escapeHTML(r.status)} — client ${escapeHTML(r.client_id)} — ${escapeHTML(new Date(r.created_at).toLocaleString())}</div>`).join('')||'<p>No recovery requests.</p>'}}
+$('saveConfig').onclick=async()=>{try{const url=$('projectUrl').value.trim(),key=$('anonKey').value.trim();if(!url.startsWith('https://')||!key)throw Error('Enter the project URL and publishable/anon key.');localStorage.setItem(CFG,JSON.stringify({url,key}));await connect(url,key)}catch(e){msg('connection',e.message)}};
+try{const c=JSON.parse(localStorage.getItem(CFG)||'null');if(c?.url&&c?.key)connect(c.url,c.key).catch(e=>{msg('connection','Connection failed: '+e.message);show('configView')})}catch{}
+$('signIn').onclick=async()=>{msg('authMessage','Signing in…');const {error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});msg('authMessage',error?error.message:'Signed in.')};
+$('forgot').onclick=async()=>{const email=$('email').value.trim();if(!email){msg('authMessage','Enter your account email first.');return}const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});msg('authMessage',error?'Could not send recovery email: '+error.message:'If this account exists, Supabase will send a password recovery email. After signing back in, submit a recovery notification to the main administrator if needed.')};
+$('signOut').onclick=async()=>{await sb.auth.signOut();show('authView')};
+$('changePassword').onclick=async()=>{const p=$('newPassword').value;if(p.length<10){alert('Use at least 10 characters.');return}const {error}=await sb.auth.updateUser({password:p});if(error){alert(error.message);return}const {error:e2}=await sb.from('profiles').update({must_change_password:false}).eq('id',user.id);if(e2){alert('Password changed, but ask the administrator to clear the initial-password flag.');return}await loadApp(user);alert('Password updated.')};
+$('addContact').onclick=async()=>{const name=$('contactName').value.trim(),phone=$('contactPhone').value.trim();if(!name||!phone){alert('Enter contact name and phone.');return}const {error}=await sb.from('emergency_contacts').insert({client_id:user.id,name,phone,contact_type:$('contactType').value});if(error){alert(error.message);return}$('contactName').value='';$('contactPhone').value='';await loadContacts()};
+$('addDependent').onclick=async()=>{const name=$('depName').value.trim(),phone=$('depPhone').value.trim();if(!name||!phone){alert('Enter dependent name and phone.');return}const {error}=await sb.from('dependents').insert({client_id:user.id,name,phone});if(error){alert(error.message);return}$('depName').value='';$('depPhone').value='';await loadDependents()};
+$('recoveryRequest').onclick=async()=>{const {error}=await sb.from('password_recovery_requests').insert({client_id:user.id,message:'Client reports forgotten password',status:'pending'});msg('recoveryStatus',error?'Request failed: '+error.message:'Recovery request submitted to the main-admin queue. Use the secure Supabase email reset to actually reset the password.');};
+$('createUser').onclick=async()=>{const body={email:$('newEmail').value.trim(),display_name:$('newDisplayName').value.trim(),password:$('newUserPassword').value,role:$('newRole').value};msg('createStatus','Submitting…');const {data,error}=await sb.functions.invoke('admin-manage-user',{body});msg('createStatus',error?'Request failed: '+error.message:JSON.stringify(data));if(!error)await loadAdmin()};
+document.addEventListener('click',async e=>{const t=e.target;if(!(t instanceof Element))return;const dc=t.closest('[data-delete-contact]');if(dc){const {error}=await sb.from('emergency_contacts').delete().eq('id',dc.dataset.deleteContact).eq('client_id',user.id);if(error)alert(error.message);else await loadContacts()}const dd=t.closest('[data-delete-dep]');if(dd){if(!confirm('Remove this dependent?'))return;const {error}=await sb.from('dependents').delete().eq('id',dd.dataset.deleteDep).eq('client_id',user.id);if(error)alert(error.message);else await loadDependents()}const ed=t.closest('[data-edit-dep]');if(ed){const d=dependents.find(x=>x.id===ed.dataset.editDep);const name=prompt('Dependent name',d?.name||'');if(name===null)return;const phone=prompt('Dependent phone',d?.phone||'');if(phone===null)return;const {error}=await sb.from('dependents').update({name:name.trim(),phone:phone.trim(),updated_at:new Date().toISOString()}).eq('id',d.id).eq('client_id',user.id);if(error)alert(error.message);else await loadDependents()}const su=t.closest('[data-suspend]');if(su){if(profile.role!=='main_admin')return;const {data,error}=await sb.functions.invoke('admin-manage-user',{body:{action:'set_client_status',user_id:su.dataset.suspend,account_status:'suspended'}});if(error)alert(error.message);else if(data?.error)alert(data.error);else await loadAdmin()}});
+function normPhone(p){const s=String(p||'').trim();return(s.startsWith('+')?'+':'')+s.replace(/\D/g,'')}
+function link(label,href,cls=''){return `<a class="btn ${cls}" href="${escapeHTML(href)}">${escapeHTML(label)}</a>`}
+$('startAlert').onclick=()=>{const mode=$('alertMode').value,neigh=contacts.filter(c=>c.contact_type==='neighbour'),svc=contacts.filter(c=>c.contact_type!=='neighbour'),choose=mode==='services'?svc:mode==='combined'?neigh.concat(svc):neigh;let list=choose;if(mode==='services'&&!svc.length){alert('Add verified Police, Fire Department or Ambulance numbers first.');return}if(!list.length){alert('Add trusted contacts first.');return}alertActive=true;$('alertPanel').classList.remove('hidden');$('callOptions').innerHTML=(mode==='services'?'<h4>Emergency services first</h4>':'<h4>Call options</h4>')+list.map(c=>link('Call '+c.name,'tel:'+normPhone(c.phone),mode==='services'?'danger':'')).join('')+'<h4>Prepare SMS</h4>'+link('Prepare SMS to selected contacts','sms:'+list.map(c=>normPhone(c.phone)).join(',')+'?body='+encodeURIComponent($('alertMessage').value+(locationLink?'\nLocation: '+locationLink:'')))+(mode==='services'?'<button class="btn" id="unreachable">Service could not be reached — show trusted contacts</button><div id="fallback" class="hidden"><h4>Trusted contacts fallback</h4>'+neigh.map(c=>link('Call '+c.name,'tel:'+normPhone(c.phone))).join('')+'</div>':'');};
+$('callOptions').addEventListener('click',e=>{if(e.target?.id==='unreachable')$('fallback').classList.remove('hidden')});$('stopAlert').onclick=()=>{$('alertPanel').classList.add('hidden');alertActive=false};$('getLocation').onclick=()=>{if(!navigator.geolocation){msg('locationStatus','Location is not supported by this browser.');return}msg('locationStatus','Requesting location…');navigator.geolocation.getCurrentPosition(p=>{locationLink='https://maps.google.com/?q='+p.coords.latitude+','+p.coords.longitude;msg('locationStatus','Location ready. It will be included in the next prepared message.');},()=>msg('locationStatus','Location unavailable. You can still call contacts.'),{enableHighAccuracy:true,timeout:10000})};
+// Register the correctly named service worker on HTTPS hosting.
+if ('serviceWorker' in navigator && location.protocol === 'https:') { window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {})); }
+// Emergency contacts are cached locally for a basic offline fallback only.
+const lc=localRead();$('personName').value=lc.personName||'';$('alertMode').value=lc.mode||'neighbours';$('alertMessage').value=lc.message||$('alertMessage').value;['personName','alertMode','alertMessage'].forEach(id=>$(id).addEventListener('change',localSave));
 })();
-</script>
-</body>
-</html>
+</script></body></html>
