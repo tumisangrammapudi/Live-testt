@@ -96,6 +96,10 @@
     #acctMessage.err { background: #3b1414; color: #fca5a5; }
     .profile-card { border: 1px solid var(--line); border-radius: 10px; padding: 4px 12px 12px; margin: 12px 0; }
     .profile-card .tag { font-size: .8rem; color: var(--muted); }
+    .wiz-progress { display: flex; gap: 6px; margin: 4px 0 8px; }
+    .wiz-progress span { flex: 1; height: 6px; border-radius: 3px; background: var(--line); }
+    .wiz-progress span.on { background: #60a5fa; }
+    .wiz-label { font-weight: 700; color: #f9fafb; margin: 0 0 6px; }
     /* Signed-in client: show the Panic screen first, forms stay out of the way */
     body.client-mode #depForm, body.client-mode #adminPanel { display: none !important; }
     body.client-mode #myProfiles > h2, body.client-mode #myProfiles > p { display: none; }
@@ -155,26 +159,52 @@
         <button class="btn" id="depAddAnother" type="button">Register another dependent</button>
       </div>
       <div id="depFormWrap">
-      <h2>Register a dependent</h2>
-      <p>Add someone who relies on you. Your registration is reviewed before it is approved.</p>
+      <h2 id="wizTitle">Register</h2>
+      <p id="wizIntro">Fill in three short steps. Your registration is saved at the end and reviewed before it is approved.</p>
       <form id="dependent-form" novalidate>
-        <label for="dep_user_name">Your full name</label>
-        <input id="dep_user_name" type="text" autocomplete="name" placeholder="John Doe">
-        <label for="dep_user_email">Your email</label>
-        <input id="dep_user_email" type="email" autocomplete="email" placeholder="john.doe@example.com">
-        <label for="dep_user_phone">Your phone number (+267 is added for you)</label>
-        <div class="phone-field">
-          <span class="phone-prefix" aria-hidden="true">+267</span>
-          <input id="dep_user_phone" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="7X XXX XXX">
+        <div class="wiz-progress" id="wizProgress" aria-hidden="true"><span></span><span></span><span></span></div>
+        <p class="wiz-label" id="wizLabel">Step 1 of 3 — Your details</p>
+
+        <div class="wiz-step" data-step="1">
+          <label for="dep_user_name">Your full name</label>
+          <input id="dep_user_name" type="text" autocomplete="name" placeholder="John Doe">
+          <label for="dep_user_email">Your email</label>
+          <input id="dep_user_email" type="email" autocomplete="email" placeholder="john.doe@example.com">
+          <label for="dep_user_phone">Your phone number (+267 is added for you)</label>
+          <div class="phone-field">
+            <span class="phone-prefix" aria-hidden="true">+267</span>
+            <input id="dep_user_phone" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="7X XXX XXX">
+          </div>
         </div>
-        <label for="dep_name">Dependent's full name</label>
-        <input id="dep_name" type="text" autocomplete="off" placeholder="Leave blank if none">
-        <label for="dep_phone">Dependent's phone number (optional)</label>
-        <div class="phone-field">
-          <span class="phone-prefix" aria-hidden="true">+267</span>
-          <input id="dep_phone" type="tel" inputmode="numeric" autocomplete="off" placeholder="7X XXX XXX">
+
+        <div class="wiz-step hidden" data-step="2">
+          <p class="small">People who should be called if you need help, such as neighbours. You can skip this and add them later.</p>
+          <label for="wiz_nb_name">Contact name</label>
+          <input id="wiz_nb_name" type="text" autocomplete="off" placeholder="Neighbour name">
+          <label for="wiz_nb_phone">Contact phone number (+267 is added for you)</label>
+          <div class="phone-field">
+            <span class="phone-prefix" aria-hidden="true">+267</span>
+            <input id="wiz_nb_phone" type="tel" inputmode="numeric" autocomplete="off" placeholder="7X XXX XXX">
+          </div>
+          <button class="btn" id="wizAddNb" type="button">Add this contact</button>
+          <div id="wizNbList" aria-live="polite"></div>
         </div>
-        <button class="btn secondary" id="depSubmit" type="submit">Submit registration</button>
+
+        <div class="wiz-step hidden" data-step="3">
+          <p class="small">Add each person who relies on you. You can add more than one, or none.</p>
+          <label for="dep_name">Dependent's full name</label>
+          <input id="dep_name" type="text" autocomplete="off" placeholder="Dependent's name">
+          <label for="dep_phone">Dependent's phone number (optional)</label>
+          <div class="phone-field">
+            <span class="phone-prefix" aria-hidden="true">+267</span>
+            <input id="dep_phone" type="tel" inputmode="numeric" autocomplete="off" placeholder="7X XXX XXX">
+          </div>
+          <button class="btn" id="wizAddDep" type="button">Add this dependent</button>
+          <div id="wizDepList" aria-live="polite"></div>
+        </div>
+
+        <button class="btn secondary" id="depSubmit" type="submit">Next</button>
+        <button class="btn hidden" id="wizBack" type="button">Back</button>
       </form>
       </div>
       <div id="depMessage" role="status" aria-live="polite"></div>
@@ -301,6 +331,20 @@
     refreshMessageLinks();
   };
   window.panicBuildPhone = buildPhone;
+  // Used by the registration steps: copies the contacts entered there onto this device.
+  window.panicAddNeighbours = function (list, personName) {
+    (Array.isArray(list) ? list : []).forEach((n) => {
+      const phone = String((n && n.phone) || "").trim();
+      if (!phone || state.neighbours.some((x) => x.phone === phone)) return;
+      state.neighbours.push({ name: String((n && n.name) || "").trim() || "Trusted contact", phone: phone });
+    });
+    if (personName && !state.personName) {
+      state.personName = personName;
+      $("personName").value = personName;
+    }
+    saveState();
+    renderContactLists();
+  };
 
   function saveState() {
     try {
@@ -626,8 +670,6 @@
   const submitBtn = document.getElementById('depSubmit');
   if (!form) return;
 
-  const depName = document.getElementById('dep_name');
-
   // ---- Remember that this device has registered, and collapse the long form ----
   const REG_KEY = 'panic-registered-v1';
   function readRegistered() {
@@ -651,8 +693,8 @@
       wrap.classList.remove('hidden');
     }
   }
-  function rememberRegistration(email, name) {
-    try { localStorage.setItem(REG_KEY, JSON.stringify({ email: email, name: name })); } catch (e) {}
+  function rememberRegistration(email, name, phone) {
+    try { localStorage.setItem(REG_KEY, JSON.stringify({ email: email, name: name, phone: phone || '' })); } catch (e) {}
     showRegisteredState();
   }
   const goEditBtn = document.getElementById('depGoEdit');
@@ -665,14 +707,10 @@
   });
   const addAnotherBtn = document.getElementById('depAddAnother');
   if (addAnotherBtn) addAnotherBtn.addEventListener('click', () => {
-    const reg = readRegistered();
     document.getElementById('depDone').classList.add('hidden');
     document.getElementById('depFormWrap').classList.remove('hidden');
-    if (reg) {
-      document.getElementById('dep_user_email').value = reg.email;
-      document.getElementById('dep_user_name').value = reg.name || '';
-    }
     document.getElementById('depMessage').style.display = 'none';
+    wizStart('addDependent');
     document.getElementById('dep_name').focus();
   });
   showRegisteredState();
@@ -719,57 +757,166 @@
     return 'Could not reach the sign-in service. Check your internet connection, then reload the page and try again.';
   }
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  // ---- Registration in steps: Your details -> Trusted contacts -> Dependents (save) ----
+  const escW = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (ch) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[ch]);
+  const STEP_NAMES = ['', 'Your details', 'Trusted contacts', 'Dependents'];
+  const wiz = { step: 1, mode: 'new', nb: [], deps: [] };
+  const $w = (id) => document.getElementById(id);
 
-    if (!form.checkValidity()) {
-      form.reportValidity();
-      return;
+  function buildPhoneW(raw) {
+    return window.panicBuildPhone ? window.panicBuildPhone(raw, false) : '';
+  }
+
+  function renderWizList(elId, items, kind) {
+    $w(elId).innerHTML = items.length
+      ? items.map((it, i) => '<div class="contact-row">' + escW(it.name) + (it.phone ? ' — ' + escW(it.phone) : '') +
+          ' <button class="btn" type="button" data-wiz-remove="' + kind + '" data-i="' + i + '">Remove</button></div>').join('')
+      : '';
+  }
+
+  function wizRender() {
+    form.querySelectorAll('.wiz-step').forEach((el) => {
+      el.classList.toggle('hidden', Number(el.dataset.step) !== wiz.step);
+    });
+    const dots = $w('wizProgress').children;
+    for (let i = 0; i < dots.length; i++) dots[i].classList.toggle('on', i < wiz.step);
+    const addOnly = wiz.mode === 'addDependent';
+    $w('wizProgress').classList.toggle('hidden', addOnly);
+    $w('wizLabel').textContent = addOnly ? 'Add dependents' : 'Step ' + wiz.step + ' of 3 — ' + STEP_NAMES[wiz.step];
+    $w('wizTitle').textContent = addOnly ? 'Add a dependent' : 'Register';
+    $w('wizIntro').classList.toggle('hidden', addOnly);
+    $w('wizBack').classList.toggle('hidden', wiz.step === 1 || addOnly);
+    submitBtn.textContent = wiz.step < 3 ? 'Next' : 'Save registration';
+    renderWizList('wizNbList', wiz.nb, 'nb');
+    renderWizList('wizDepList', wiz.deps, 'dep');
+  }
+
+  function wizStart(mode) {
+    wiz.mode = mode;
+    wiz.step = mode === 'addDependent' ? 3 : 1;
+    wiz.nb = [];
+    wiz.deps = [];
+    ['wiz_nb_name', 'wiz_nb_phone', 'dep_name', 'dep_phone'].forEach((id) => { $w(id).value = ''; });
+    if (mode === 'new') ['dep_user_name', 'dep_user_email', 'dep_user_phone'].forEach((id) => { $w(id).value = ''; });
+    wizRender();
+  }
+
+  // Adds what is typed in the contact boxes to the list. Returns false when something typed is not valid.
+  function wizAddNeighbour() {
+    const name = $w('wiz_nb_name').value.trim();
+    const raw = $w('wiz_nb_phone').value.trim();
+    if (!name && !raw) return true;
+    const phone = buildPhoneW(raw);
+    if (!phone) { showMessage('Enter a valid contact phone number: 7 or 8 digits, without +267.', 'err'); return false; }
+    wiz.nb.push({ name: name || 'Trusted contact', phone: phone });
+    $w('wiz_nb_name').value = '';
+    $w('wiz_nb_phone').value = '';
+    renderWizList('wizNbList', wiz.nb, 'nb');
+    return true;
+  }
+
+  function wizAddDependent() {
+    const name = $w('dep_name').value.trim();
+    const raw = $w('dep_phone').value.trim();
+    if (!name && !raw) return true;
+    if (!name) { showMessage("Enter the dependent's name.", 'err'); return false; }
+    let phone = '';
+    if (raw) {
+      phone = buildPhoneW(raw);
+      if (!phone) { showMessage("Enter a valid phone number for the dependent: 7 or 8 digits, without +267, or leave it blank.", 'err'); return false; }
     }
+    wiz.deps.push({ name: name, phone: phone });
+    $w('dep_name').value = '';
+    $w('dep_phone').value = '';
+    renderWizList('wizDepList', wiz.deps, 'dep');
+    return true;
+  }
 
-    // The dependent's name is optional: leave it blank if there is none.
-    const depNameVal = depName.value.trim();
+  function wizValidateStep1() {
+    const name = $w('dep_user_name').value.trim();
+    const email = $w('dep_user_email').value.trim();
+    if (!name) { showMessage('Enter your full name.', 'err'); return null; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showMessage('Enter a valid email address.', 'err'); return null; }
+    const phone = buildPhoneW($w('dep_user_phone').value);
+    if (!phone) { showMessage('Enter your phone number: 7 or 8 digits, without +267.', 'err'); return null; }
+    return { name: name, email: email.toLowerCase(), phone: phone };
+  }
+
+  $w('wizAddNb').addEventListener('click', () => {
+    msgDiv.style.display = 'none';
+    if (wizAddNeighbour() && !wiz.nb.length) showMessage('Type a contact name and phone number first.', 'err');
+  });
+  $w('wizAddDep').addEventListener('click', () => {
+    msgDiv.style.display = 'none';
+    if (wizAddDependent() && !wiz.deps.length) showMessage("Type the dependent's name first.", 'err');
+  });
+  $w('wizBack').addEventListener('click', () => {
+    msgDiv.style.display = 'none';
+    if (wiz.step > 1) { wiz.step -= 1; wizRender(); }
+  });
+  form.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-wiz-remove]');
+    if (!btn) return;
+    const list = btn.dataset.wizRemove === 'nb' ? wiz.nb : wiz.deps;
+    list.splice(Number(btn.dataset.i), 1);
+    wizRender();
+  });
+
+  async function wizSave() {
     if (!window.supabase) {
       showMessage('Could not load the registration service. You may be offline. Check your connection and reload.', 'err');
       return;
     }
-    if (!client) {
-      showMessage('This form is not connected yet. Add your Supabase URL and anon key in the script.', 'err');
+    if (!client && !makeClient()) {
+      showMessage(notConnectedText(), 'err');
       return;
     }
+    let who;
+    if (wiz.mode === 'addDependent') {
+      const reg = readRegistered();
+      if (!reg) { showMessage('Please register first.', 'err'); return; }
+      if (!wiz.deps.length) { showMessage('Add at least one dependent, or go back.', 'err'); return; }
+      who = { name: reg.name || '', email: reg.email, phone: reg.phone || '' };
+    } else {
+      who = wizValidateStep1();
+      if (!who) { wiz.step = 1; wizRender(); return; }
+    }
+
+    // One row per dependent, all under the same name and email. The contacts are stored with the first row.
+    const list = wiz.deps.length ? wiz.deps : [{ name: '', phone: '' }];
+    const rows = list.map((d, i) => ({
+      registered_by_name: who.name,
+      registered_by_email: who.email,
+      registered_by_phone: who.phone,
+      dependent_name: d.name,
+      dependent_phone: d.phone,
+      dependent_relationship: '', // keeps a NOT NULL column happy
+      neighbours: (i === 0 && wiz.mode === 'new') ? wiz.nb : [],
+      status: 'pending' // Forced by RLS, but explicit here
+    }));
 
     submitBtn.disabled = true;
-    showMessage('Submitting…', 'info');
-
-    const payload = {
-      registered_by_name: document.getElementById('dep_user_name').value.trim(),
-      registered_by_email: document.getElementById('dep_user_email').value.trim().toLowerCase(),
-      registered_by_phone: window.panicBuildPhone ? window.panicBuildPhone(document.getElementById('dep_user_phone').value, false) : '',
-      dependent_phone: window.panicBuildPhone ? window.panicBuildPhone(document.getElementById('dep_phone').value, false) : '',
-      dependent_name: depNameVal,
-      dependent_relationship: '', // field removed from the form; blank keeps a NOT NULL column happy
-      status: 'pending' // Forced by RLS, but explicit here
-    };
-
+    showMessage('Saving…', 'info');
     try {
       // No .select() here: anonymous users usually can insert but not read rows back.
-      const { error } = await client.from(TABLE_NAME).insert([payload]);
+      const { error } = await client.from(TABLE_NAME).insert(rows);
       if (error) throw error;
 
-      const savedEmail = payload.registered_by_email;
-      const savedName = payload.registered_by_name;
-      form.reset();
-      rememberRegistration(savedEmail, savedName);
+      if (wiz.mode === 'new' && window.panicAddNeighbours) window.panicAddNeighbours(wiz.nb, who.name);
+      rememberRegistration(who.email, who.name, who.phone);
+      wizStart('new');
       showMessage('Registration received. It is pending approval.', 'ok');
     } catch (err) {
       console.error('Registration failed:', err);
-      let text = 'Could not submit your registration. Please try again.';
+      let text = 'Could not save your registration. Please try again.';
       if (err && err.code === '42501') {
-        text = 'Submission was blocked by the database permissions (RLS). Ask the admin to check the insert policy.';
+        text = 'Saving was blocked by the database permissions (RLS). Ask the admin to check the insert policy.';
       } else if (err && err.code === '42P01') {
         text = 'The "' + TABLE_NAME + '" table was not found. Check the table name in the script.';
-      } else if (err && err.code === '23505') {
-        text = 'This dependent is already registered.';
+      } else if (err && (err.code === 'PGRST204' || err.code === '42703')) {
+        text = 'The database is missing a column. Ask the admin to run the latest SQL setup.';
       } else if (err && err.message && /fetch|network/i.test(err.message)) {
         text = 'No connection. Check your internet and try again.';
       }
@@ -777,7 +924,26 @@
     } finally {
       submitBtn.disabled = false;
     }
+  }
+
+  // Next / Save (also what the keyboard's Enter key does)
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    msgDiv.style.display = 'none';
+    if (wiz.step === 1) {
+      if (!wizValidateStep1()) return;
+      wiz.step = 2;
+      wizRender();
+    } else if (wiz.step === 2) {
+      if (!wizAddNeighbour()) return;
+      wiz.step = 3;
+      wizRender();
+    } else {
+      if (!wizAddDependent()) return;
+      await wizSave();
+    }
   });
+  wizRender();
 
   // ---- Neighbour name suggestions from registered people ----
   const REGISTRY_CACHE_KEY = 'panic-registry-names-v1';
@@ -1242,6 +1408,8 @@
         '<label>Registrant phone</label>' + phoneInputHTML('registered_by_phone', r.registered_by_phone) +
         '<label>Dependent name</label>' + textInputHTML('dependent_name', r.dependent_name) +
         '<label>Dependent phone</label>' + phoneInputHTML('dependent_phone', r.dependent_phone) +
+        (Array.isArray(r.neighbours) && r.neighbours.length
+          ? '<p class="small">Trusted contacts: ' + r.neighbours.map((n) => escA(n.name) + ' — ' + escA(n.phone)).join('; ') + '</p>' : '') +
         '<label>Status</label><select data-f="status">' +
           STATUSES.map((s) => '<option value="' + s + '"' + ((r.status || 'pending') === s ? ' selected' : '') + '>' + s + '</option>').join('') +
         '</select>' +
