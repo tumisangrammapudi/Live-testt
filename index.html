@@ -142,6 +142,13 @@
     <p class="small">For your first test, use consenting contacts and tell them in advance that this is a test. Do not test by calling emergency services unless they explicitly permit it.</p>
 
     <div id="depForm">
+      <div id="depDone" class="hidden">
+        <h2>You're registered</h2>
+        <p id="depDoneText">Your registration is saved.</p>
+        <button class="btn secondary" id="depGoEdit" type="button">Edit my details</button>
+        <button class="btn" id="depAddAnother" type="button">Register another dependent</button>
+      </div>
+      <div id="depFormWrap">
       <h2>Register a dependent</h2>
       <p>Add someone who relies on you. Your registration is reviewed before it is approved.</p>
       <form id="dependent-form" novalidate>
@@ -163,6 +170,7 @@
         </div>
         <button class="btn secondary" id="depSubmit" type="submit">Submit registration</button>
       </form>
+      </div>
       <div id="depMessage" role="status" aria-live="polite"></div>
     </div>
 
@@ -571,14 +579,14 @@
   "use strict";
 
   // *** REPLACE WITH YOUR PROJECT CREDENTIALS ***
-  const SUPABASE_URL = 'https://your-project-id.supabase.co';
-  const SUPABASE_ANON_KEY = 'your-anon-key-here';
+  const SUPABASE_URL = 'https://lgzpytpnpiatpayyzquv.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_mjwO-DikUakHlhuA1m0cIA_nAmJRElL';
   // Table that stores registrations. Change this if yours is named differently.
   const TABLE_NAME = 'dependents';
 
   // The administrator's emergency numbers ("agency contacts"). Only this email may change them.
   // It must be the same email you put in the Supabase policy below.
-  const ADMIN_EMAIL = 'admin@example.com';
+  const ADMIN_EMAIL = 'kaelo9224@gmail.com';
   const AGENCY_TABLE = 'agency_contacts';
   /*
     ONE-TIME SUPABASE SETUP (run in the SQL editor), using your real administrator email:
@@ -591,8 +599,8 @@
     alter table agency_contacts enable row level security;
     create policy "everyone can read" on agency_contacts for select using (true);
     create policy "admin can write" on agency_contacts for all to authenticated
-      using ((auth.jwt() ->> 'email') = 'admin@example.com')
-      with check ((auth.jwt() ->> 'email') = 'admin@example.com');
+      using ((auth.jwt() ->> 'email') = 'kaelo9224@gmail.com')
+      with check ((auth.jwt() ->> 'email') = 'kaelo9224@gmail.com');
 
     Keep "Confirm email" switched on under Authentication settings so nobody can claim that address.
   */
@@ -611,6 +619,61 @@
 
   const depName = document.getElementById('dep_name');
 
+  // ---- Remember that this device has registered, and collapse the long form ----
+  const REG_KEY = 'panic-registered-v1';
+  function readRegistered() {
+    try {
+      const v = JSON.parse(localStorage.getItem(REG_KEY) || 'null');
+      return v && v.email ? v : null;
+    } catch (e) { return null; }
+  }
+  function showRegisteredState() {
+    const reg = readRegistered();
+    const done = document.getElementById('depDone');
+    const wrap = document.getElementById('depFormWrap');
+    if (!done || !wrap) return;
+    if (reg) {
+      document.getElementById('depDoneText').textContent =
+        'Registered with ' + reg.email + '. To change your name, your dependents or phone numbers, sign in with this email.';
+      done.classList.remove('hidden');
+      wrap.classList.add('hidden');
+    } else {
+      done.classList.add('hidden');
+      wrap.classList.remove('hidden');
+    }
+  }
+  function rememberRegistration(email, name) {
+    try { localStorage.setItem(REG_KEY, JSON.stringify({ email: email, name: name })); } catch (e) {}
+    showRegisteredState();
+  }
+  const goEditBtn = document.getElementById('depGoEdit');
+  if (goEditBtn) goEditBtn.addEventListener('click', () => {
+    const reg = readRegistered();
+    const acct = document.getElementById('acct_email');
+    if (reg && acct && !acct.value) acct.value = reg.email;
+    const box = document.getElementById('myProfiles');
+    if (box) box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  const addAnotherBtn = document.getElementById('depAddAnother');
+  if (addAnotherBtn) addAnotherBtn.addEventListener('click', () => {
+    const reg = readRegistered();
+    document.getElementById('depDone').classList.add('hidden');
+    document.getElementById('depFormWrap').classList.remove('hidden');
+    if (reg) {
+      document.getElementById('dep_user_email').value = reg.email;
+      document.getElementById('dep_user_name').value = reg.name || '';
+    }
+    document.getElementById('depMessage').style.display = 'none';
+    document.getElementById('dep_name').focus();
+  });
+  showRegisteredState();
+  // Pre-fill the sign-in email on the "Edit my details" box.
+  (function () {
+    const reg = readRegistered();
+    const acct = document.getElementById('acct_email');
+    if (reg && acct) acct.value = reg.email;
+  })();
+
   function showMessage(text, kind) {
     msgDiv.textContent = text;
     msgDiv.className = kind;
@@ -628,6 +691,23 @@
     }
   } catch (e) {
     console.error('Supabase init failed:', e);
+  }
+
+  function makeClient() {
+    try {
+      if (!client && window.supabase && isConfigured) {
+        client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+    } catch (e) {
+      console.error('Supabase init failed:', e);
+    }
+    return !!client;
+  }
+
+  // The same words were used for two different problems, so say which one it is.
+  function notConnectedText() {
+    if (!isConfigured) return 'Not connected yet. This copy of the page has no Supabase URL and anon key. Upload the latest index.html.';
+    return 'Could not reach the sign-in service. Check your internet connection, then reload the page and try again.';
   }
 
   form.addEventListener('submit', async (e) => {
@@ -667,7 +747,10 @@
       const { error } = await client.from(TABLE_NAME).insert([payload]);
       if (error) throw error;
 
+      const savedEmail = payload.registered_by_email;
+      const savedName = payload.registered_by_name;
       form.reset();
+      rememberRegistration(savedEmail, savedName);
       showMessage('Registration received. It is pending approval.', 'ok');
     } catch (err) {
       console.error('Registration failed:', err);
@@ -873,7 +956,7 @@
   }
 
   $a('admSignIn').addEventListener('click', async () => {
-    if (!client) return admSay('Not connected yet. Add your Supabase URL and anon key in the script.', 'err');
+    if (!client) return admSay(notConnectedText(), 'err');
     const email = $a('adm_email').value.trim();
     const password = $a('adm_password').value;
     if (!email || !password) return admSay('Enter the administrator email and password.', 'err');
@@ -895,7 +978,7 @@
   });
 
   $a('admRegister').addEventListener('click', async () => {
-    if (!client) return admSay('Not connected yet. Add your Supabase URL and anon key in the script.', 'err');
+    if (!client) return admSay(notConnectedText(), 'err');
     const email = $a('adm_email').value.trim();
     const password = $a('adm_password').value;
     if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
@@ -937,7 +1020,7 @@
   });
 
   $a('admSave').addEventListener('click', async () => {
-    if (!client) return admSay('Not connected yet.', 'err');
+    if (!client) return admSay(notConnectedText(), 'err');
     $a('admSave').disabled = true;
     admSay('Saving…', 'info');
     try {
@@ -1101,7 +1184,7 @@
   });
 
   $a('acctSendLink').addEventListener('click', async () => {
-    if (!client) return acctSay('Not connected yet. Add your Supabase URL and anon key in the script.', 'err');
+    if (!client) return acctSay(notConnectedText(), 'err');
     const email = $a('acct_email').value.trim().toLowerCase();
     if (!email || email.indexOf('@') < 1) return acctSay('Enter the email you registered with.', 'err');
     $a('acctSendLink').disabled = true;
@@ -1200,13 +1283,33 @@
     }
   });
 
-  if (client) {
+  let authHooked = false;
+  function hookAuth() {
+    if (!client || authHooked) return;
+    authHooked = true;
     // Runs after the magic link opens this page, and after any sign in or sign out.
     client.auth.onAuthStateChange(() => {
       setTimeout(() => { refreshAccount(); refreshAdminUI().then((isAdmin) => { if (isAdmin) loadAllProfiles(); }); }, 0);
     });
   }
+  hookAuth();
   refreshAccount();
+
+  // If the main copy of the Supabase library did not load, try a second source.
+  if (!client && isConfigured && !window.supabase) {
+    const backup = document.createElement('script');
+    backup.src = 'https://unpkg.com/@supabase/supabase-js@2';
+    backup.onload = () => {
+      if (makeClient()) {
+        hookAuth();
+        loadRegistry();
+        loadAgency();
+        refreshAdminUI().then((isAdmin) => { if (isAdmin) loadAllProfiles(); });
+        refreshAccount();
+      }
+    };
+    document.head.appendChild(backup);
+  }
 
   window.addEventListener('online', loadAgency);
   loadAgency();
