@@ -571,14 +571,14 @@
   "use strict";
 
   // *** REPLACE WITH YOUR PROJECT CREDENTIALS ***
-  const SUPABASE_URL = 'https://lgzpytpnpiatpayyzquv.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable_mjwO-DikUakHlhuA1m0cIA_nAmJRElL';
+  const SUPABASE_URL = 'https://your-project-id.supabase.co';
+  const SUPABASE_ANON_KEY = 'your-anon-key-here';
   // Table that stores registrations. Change this if yours is named differently.
   const TABLE_NAME = 'dependents';
 
   // The administrator's emergency numbers ("agency contacts"). Only this email may change them.
   // It must be the same email you put in the Supabase policy below.
-  const ADMIN_EMAIL = 'kaelo9224@gmail.com';
+  const ADMIN_EMAIL = 'admin@example.com';
   const AGENCY_TABLE = 'agency_contacts';
   /*
     ONE-TIME SUPABASE SETUP (run in the SQL editor), using your real administrator email:
@@ -591,8 +591,8 @@
     alter table agency_contacts enable row level security;
     create policy "everyone can read" on agency_contacts for select using (true);
     create policy "admin can write" on agency_contacts for all to authenticated
-      using ((auth.jwt() ->> 'email') = 'kaelo9224@gmail.com')
-      with check ((auth.jwt() ->> 'email') = 'kaelo9224@gmail.com');
+      using ((auth.jwt() ->> 'email') = 'admin@example.com')
+      with check ((auth.jwt() ->> 'email') = 'admin@example.com');
 
     Keep "Confirm email" switched on under Authentication settings so nobody can claim that address.
   */
