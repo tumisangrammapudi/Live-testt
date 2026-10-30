@@ -96,6 +96,12 @@
     #acctMessage.err { background: #3b1414; color: #fca5a5; }
     .profile-card { border: 1px solid var(--line); border-radius: 10px; padding: 4px 12px 12px; margin: 12px 0; }
     .profile-card .tag { font-size: .8rem; color: var(--muted); }
+    /* Signed-in client: show the Panic screen first, forms stay out of the way */
+    body.client-mode #depForm, body.client-mode #adminPanel { display: none !important; }
+    body.client-mode #myProfiles > h2, body.client-mode #myProfiles > p { display: none; }
+    body.client-mode #setupView { display: flex; flex-direction: column; }
+    body.client-mode #myProfiles { order: -1; border-top: 0; margin-top: 0; padding-top: 0;
+      border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 12px; }
   </style>
   <!-- Supabase JS Client CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -182,10 +188,13 @@
         <input id="acct_email" type="email" autocomplete="email" placeholder="john.doe@example.com">
         <button class="btn secondary" id="acctSendLink" type="button">Email me a sign-in link</button>
       </div>
-      <div id="acctSignedIn" class="hidden">
+      <div id="acctBar" class="hidden">
         <p class="small" id="acctWho"></p>
-        <div id="acctEditor"></div>
+        <button class="btn secondary" id="acctToggle" type="button">My details</button>
         <button class="btn" id="acctSignOut" type="button">Sign out</button>
+      </div>
+      <div id="acctSignedIn" class="hidden">
+        <div id="acctEditor"></div>
       </div>
       <div id="acctMessage" role="status" aria-live="polite"></div>
     </div>
@@ -1098,19 +1107,26 @@
   }
 
   // ---- Registrant (client) side ----
+  let detailsOpen = false;
   async function refreshAccount() {
     const session = await currentSession();
     const email = session && session.user && session.user.email;
     const isAdmin = isAdminSession(session);
     if (!email || isAdmin) {
+      document.body.classList.remove('client-mode');
       acctOut.classList.remove('hidden');
       acctIn.classList.add('hidden');
+      $a('acctBar').classList.add('hidden');
       return;
     }
+    // Signed-in client: the page becomes the Panic screen; details open only on request.
+    document.body.classList.add('client-mode');
     acctOut.classList.add('hidden');
-    acctIn.classList.remove('hidden');
+    $a('acctBar').classList.remove('hidden');
     $a('acctWho').textContent = 'Signed in as ' + email + '.';
-    await loadMyProfiles(email);
+    $a('acctToggle').textContent = detailsOpen ? 'Hide my details' : 'My details';
+    acctIn.classList.toggle('hidden', !detailsOpen);
+    if (detailsOpen) await loadMyProfiles(email);
   }
 
   async function loadMyProfiles(email) {
@@ -1202,7 +1218,10 @@
     }
   });
 
+  $a('acctToggle').addEventListener('click', () => { detailsOpen = !detailsOpen; refreshAccount(); });
+
   $a('acctSignOut').addEventListener('click', async () => {
+    detailsOpen = false;
     try { await client.auth.signOut(); } catch (e) {}
     acctMsg.style.display = 'none';
     await refreshAccount();
