@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111827">
+  <title>Panic Alert — Emergency Help</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #111827;
+      color: #f9fafb;
+      --panel: #1f2937;
+      --muted: #d1d5db;
+      --line: #374151;
+      --blue: #2563eb;
+      --red: #b91c1c;
+      --green: #166534;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; padding: 18px; }
+    main { width: min(100%, 680px); margin: 0 auto; }
+    header, section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    h1 { font-size: clamp(1.5rem, 5vw, 2rem); margin: 0 0 8px; }
+    h2 { font-size: 1.4rem; margin-top: 0; }
+    h3 { margin-bottom: 8px; }
+    p { line-height: 1.55; color: var(--muted); }
+    .small { font-size: .9rem; }
+    .note { background: #111827; border-left: 4px solid #60a5fa; padding: 12px; border-radius: 6px; }
+    .btn {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 13px 16px;
+      border: 1px solid #4b5563;
+      border-radius: 10px;
+      background: #374151;
+      color: white;
+      font: inherit;
+      font-weight: 650;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .btn:focus-visible, button:focus-visible, a:focus-visible {
+      outline: 3px solid #93c5fd;
+      outline-offset: 3px;
+    }
+    .btn.big { background: var(--red); border-color: #ef4444; }
+    .btn.wa { background: #166534; border-color: #22c55e; }
+    .btn.safe { background: var(--green); border-color: #22c55e; }
+    .btn.secondary { background: #1d4ed8; border-color: #60a5fa; }
+    .status { padding: 10px 12px; background: #111827; border-radius: 8px; }
+    .hidden { display: none !important; }
+    label { display: block; margin: 12px 0 6px; font-weight: 600; }
+    input, textarea {
+      display: block; width: 100%; padding: 11px; border-radius: 8px;
+      border: 1px solid #6b7280; background: #111827; color: #f9fafb; font: inherit;
+    }
+    .contact-row { border-top: 1px solid var(--line); padding: 12px 0; }
+    .suggest { list-style: none; margin: 6px 0 0; padding: 0; max-height: 240px; overflow-y: auto;
+      background: #111827; border: 1px solid #6b7280; border-radius: 8px; }
+    .suggest li { padding: 12px; border-top: 1px solid var(--line); cursor: pointer; }
+    .suggest li:first-child { border-top: 0; }
+    .suggest li[aria-selected="true"], .suggest li:hover { background: #1d4ed8; }
+    .suggest .sub { display: block; font-size: .85rem; color: var(--muted); }
+    .admin { margin-top: 24px; border-top: 1px solid var(--line); padding-top: 8px; }
+    .admin summary { cursor: pointer; font-weight: 700; padding: 10px 0; }
+    #admMessage { display: none; margin-top: 14px; padding: 12px; border-radius: 8px; font-weight: 600; line-height: 1.4; }
+    #admMessage.info { background: #111827; color: var(--muted); }
+    #admMessage.ok { background: #14301f; color: #86efac; }
+    #admMessage.err { background: #3b1414; color: #fca5a5; }
+    .phone-field { display: flex; align-items: stretch; }
+    .phone-prefix { display: flex; align-items: center; padding: 0 12px; font-weight: 700; color: #f9fafb;
+      background: #374151; border: 1px solid #6b7280; border-right: 0; border-radius: 8px 0 0 8px; }
+    .phone-field input { border-radius: 0 8px 8px 0; flex: 1; min-width: 0; }
+    footer { color: #9ca3af; font-size: .85rem; padding: 8px 2px 24px; line-height: 1.5; }
+    #depForm { border-top: 1px solid var(--line); margin-top: 24px; padding-top: 4px; }
+    #depMessage { display: none; margin-top: 14px; padding: 12px; border-radius: 8px; font-weight: 600; line-height: 1.4; }
+    #depMessage.info { background: #111827; color: var(--muted); }
+    #depMessage.ok { background: #14301f; color: #86efac; }
+    #depMessage.err { background: #3b1414; color: #fca5a5; }
+    .btn:disabled { opacity: .6; cursor: not-allowed; }
+    select { display:block;width:100%;padding:11px;border-radius:8px;border:1px solid #6b7280;background:#111827;color:#f9fafb;font:inherit; }
+    #myProfiles { border-top: 1px solid var(--line); margin-top: 24px; padding-top: 4px; }
+    #acctMessage { display: none; margin-top: 14px; padding: 12px; border-radius: 8px; font-weight: 600; line-height: 1.4; }
+    #acctMessage.info { background: #111827; color: var(--muted); }
+    #acctMessage.ok { background: #14301f; color: #86efac; }
+    #acctMessage.err { background: #3b1414; color: #fca5a5; }
+    .profile-card { border: 1px solid var(--line); border-radius: 10px; padding: 4px 12px 12px; margin: 12px 0; }
+    .profile-card .tag { font-size: .8rem; color: var(--muted); }
+    .wiz-progress { display: flex; gap: 6px; margin: 4px 0 8px; }
+    .wiz-progress span { flex: 1; height: 6px; border-radius: 3px; background: var(--line); }
+    .wiz-progress span.on { background: #60a5fa; }
+    .wiz-label { font-weight: 700; color: #f9fafb; margin: 0 0 6px; }
+    /* Signed-in client: show the Panic screen first, forms stay out of the way */
+    body.client-mode #depForm, body.client-mode #adminPanel { display: none !important; }
+    body.client-mode #myProfiles > h2, body.client-mode #myProfiles > p { display: none; }
+    body.client-mode #setupView { display: flex; flex-direction: column; }
+    body.client-mode #myProfiles { order: -1; border-top: 0; margin-top: 0; padding-top: 0;
+      border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 12px; }
+  
+    /* ---- Login app layout: one panel at a time ---- */
+    header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 20px; }
+    header.top h1 { margin: 0; font-size: 1.3rem; }
+    #topUser { display: flex; align-items: center; gap: 10px; }
+    #topUser .btn { width: auto; margin: 0; padding: 8px 14px; }
+    #topEmail { color: var(--muted); word-break: break-all; }
+    #msgBar { display: none; position: sticky; top: 8px; z-index: 5; margin-bottom: 14px; padding: 12px;
+      border-radius: 8px; font-weight: 600; line-height: 1.4; }
+    #msgBar.info { background: #1e293b; color: var(--muted); border: 1px solid var(--line); }
+    #msgBar.ok { background: #14301f; color: #86efac; }
+    #msgBar.err { background: #3b1414; color: #fca5a5; }
+    .btn.linklike { background: transparent; border-color: transparent; text-decoration: underline; }
+    input[readonly] { opacity: .75; }
+</style>
+  <!-- Supabase JS Client CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<main>
+  <header class="top">
+    <h1>Panic Alert</h1>
+    <div id="topUser" class="hidden">
+      <span id="topEmail" class="small"></span>
+      <button class="btn" id="signOutBtn" type="button">Sign out</button>
+    </div>
+  </header>
+
+  <div id="msgBar" role="status" aria-live="polite"></div>
+
+  <!-- ===== Loading ===== -->
+  <section class="screen" data-screen="loading">
+    <p>Loading…</p>
+  </section>
+
+  <!-- ===== Sign in ===== -->
+  <section class="screen hidden" data-screen="login">
+    <h2>Sign in</h2>
+    <form id="loginForm" novalidate>
+      <label for="login_email">Email</label>
+      <input id="login_email" type="email" autocomplete="username" placeholder="you@example.com">
+      <label for="login_password">Password</label>
+      <input id="login_password" type="password" autocomplete="current-password">
+      <button class="btn secondary" id="loginBtn" type="submit">Sign in</button>
+    </form>
+    <button class="btn" type="button" data-go="signup">Create an account</button>
+    <button class="btn linklike" type="button" data-go="forgot">Forgot password?</button>
+  </section>
+
+  <!-- ===== Create account ===== -->
+  <section class="screen hidden" data-screen="signup">
+    <h2>Create an account</h2>
+    <form id="signupForm" novalidate>
+      <label for="su_email">Email</label>
+      <input id="su_email" type="email" autocomplete="username" placeholder="you@example.com">
+      <label for="su_password">Password (6 or more characters)</label>
+      <input id="su_password" type="password" autocomplete="new-password">
+      <label for="su_password2">Repeat the password</label>
+      <input id="su_password2" type="password" autocomplete="new-password">
+      <button class="btn secondary" id="signupBtn" type="submit">Create account</button>
+    </form>
+    <p class="small">You may be sent an email to confirm your address. If you already have an account, sign in instead.</p>
+    <button class="btn" type="button" data-go="login">Back to sign in</button>
+  </section>
+
+  <!-- ===== Forgot password ===== -->
+  <section class="screen hidden" data-screen="forgot">
+    <h2>Reset your password</h2>
+    <form id="forgotForm" novalidate>
+      <label for="fg_email">Your email</label>
+      <input id="fg_email" type="email" autocomplete="username" placeholder="you@example.com">
+      <button class="btn secondary" id="forgotBtn" type="submit">Email me a reset link</button>
+    </form>
+    <button class="btn" type="button" data-go="login">Back to sign in</button>
+  </section>
+
+  <!-- ===== New password (after the reset link) ===== -->
+  <section class="screen hidden" data-screen="reset">
+    <h2>Choose a new password</h2>
+    <form id="resetForm" novalidate>
+      <label for="rs_password">New password (6 or more characters)</label>
+      <input id="rs_password" type="password" autocomplete="new-password">
+      <label for="rs_password2">Repeat the new password</label>
+      <input id="rs_password2" type="password" autocomplete="new-password">
+      <button class="btn secondary" id="resetBtn" type="submit">Save new password</button>
+    </form>
+  </section>
+
+  <!-- ===== Registration, step 1 ===== -->
+  <section class="screen hidden" data-screen="wiz1">
+    <div class="wiz-progress" aria-hidden="true"><span class="on"></span><span></span><span></span></div>
+    <p class="wiz-label">Step 1 of 3 — Your details</p>
+    <form id="wizForm1" novalidate>
+      <label for="wiz_name">Your full name</label>
+      <input id="wiz_name" type="text" autocomplete="name" placeholder="John Doe">
+      <label for="wiz_email">Your email</label>
+      <input id="wiz_email" type="email" readonly>
+      <label for="wiz_phone">Your phone number (+267 is added for you)</label>
+      <div class="phone-field">
+        <span class="phone-prefix" aria-hidden="true">+267</span>
+        <input id="wiz_phone" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="7X XXX XXX">
+      </div>
+      <button class="btn secondary" type="submit">Next</button>
+    </form>
+  </section>
+
+  <!-- ===== Registration, step 2 ===== -->
+  <section class="screen hidden" data-screen="wiz2">
+    <div class="wiz-progress" aria-hidden="true"><span class="on"></span><span class="on"></span><span></span></div>
+    <p class="wiz-label">Step 2 of 3 — Trusted contacts</p>
+    <form id="wizForm2" novalidate>
+      <p class="small">People who should be called if you need help, such as neighbours. You can skip this and add them later.</p>
+      <label for="wiz_nb_name">Contact name</label>
+      <input id="wiz_nb_name" type="text" autocomplete="off" placeholder="Neighbour name">
+      <label for="wiz_nb_phone">Contact phone number (+267 is added for you)</label>
+      <div class="phone-field">
+        <span class="phone-prefix" aria-hidden="true">+267</span>
+        <input id="wiz_nb_phone" type="tel" inputmode="numeric" autocomplete="off" placeholder="7X XXX XXX">
+      </div>
+      <button class="btn" id="wizAddNb" type="button">Add this contact</button>
+      <div id="wizNbList" aria-live="polite"></div>
+      <button class="btn secondary" type="submit">Next</button>
+      <button class="btn" type="button" data-go="wiz1">Back</button>
+    </form>
+  </section>
+
+  <!-- ===== Registration, step 3 ===== -->
+  <section class="screen hidden" data-screen="wiz3">
+    <div class="wiz-progress" aria-hidden="true"><span class="on"></span><span class="on"></span><span class="on"></span></div>
+    <p class="wiz-label">Step 3 of 3 — Dependents</p>
+    <form id="wizForm3" novalidate>
+      <p class="small">Add each person who relies on you. You can add more than one, or none.</p>
+      <label for="dep_name">Dependent's full name</label>
+      <input id="dep_name" type="text" autocomplete="off" placeholder="Dependent's name">
+      <label for="dep_phone">Dependent's phone number (optional)</label>
+      <div class="phone-field">
+        <span class="phone-prefix" aria-hidden="true">+267</span>
+        <input id="dep_phone" type="tel" inputmode="numeric" autocomplete="off" placeholder="7X XXX XXX">
+      </div>
+      <button class="btn" id="wizAddDep" type="button">Add this dependent</button>
+      <div id="wizDepList" aria-live="polite"></div>
+      <button class="btn secondary" id="wizSaveBtn" type="submit">Save registration</button>
+      <button class="btn" type="button" data-go="wiz2">Back</button>
+    </form>
+  </section>
+
+  <!-- ===== Home: the Panic screen ===== -->
+  <section id="setupView" class="screen hidden" data-screen="home">
+    <p id="offlineNote" class="note small hidden">You are offline. Your saved contacts still work on this phone.</p>
+    <h2>Set up your contacts</h2>
+    <button class="btn secondary" id="goDetails" type="button">My details</button>
+    <p>Your trusted contacts are saved only in this browser on this device. Emergency numbers are set by the administrator and copied to everyone automatically.</p>
+    <label for="personName">Your name</label>
+    <input id="personName" autocomplete="name" placeholder="Your name">
+    <label for="neighbourName">Trusted neighbour / contact name</label>
+    <input id="neighbourName" autocomplete="off" placeholder="Type part of a registered name, or enter any name"
+      role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="nbSuggest">
+    <ul id="nbSuggest" class="suggest hidden" role="listbox" aria-label="Registered names"></ul>
+    <label for="neighbourPhone">Phone number (+267 is added for you)</label>
+    <div class="phone-field">
+      <span class="phone-prefix" aria-hidden="true">+267</span>
+      <input id="neighbourPhone" type="tel" inputmode="numeric" autocomplete="off" placeholder="7X XXX XXX">
+    </div>
+    <button class="btn secondary" id="addNeighbour" type="button">Add trusted contact</button>
+
+    <div id="neighbourList" aria-live="polite"></div>
+
+    <div id="emergencyList" aria-live="polite"></div>
+
+    <label for="alertMode">Alert option</label>
+    <select id="alertMode">
+      <option value="neighbours">Option 1 — Neighbour Alert</option>
+      <option value="combined">Option 2 — Neighbours + Emergency Contacts</option>
+      <option value="services">Option 3 — Emergency Services First</option>
+    </select>
+    <p class="small">Options 2 and 3 use the emergency numbers listed above. You cannot change them; only the administrator can.</p>
+
+    <label for="customMessage">Alert message</label>
+    <textarea id="customMessage" rows="3">I may need help. Please try calling me and check on my safety.</textarea>
+    <button class="btn big" id="startAlert" type="button">Start test alert</button>
+    <p class="small">For your first test, use consenting contacts and tell them in advance that this is a test. Do not test by calling emergency services unless they explicitly permit it.</p>
+    <p class="note small"><b>Safety note:</b> This web app can open your phone's dialler, WhatsApp or SMS app. It cannot confirm that a call was answered or guarantee that a message was delivered.</p>
+  </section>
+
+  <!-- ===== Alert (managed by the Panic code) ===== -->
+  <section id="alertView" class="hidden" aria-live="polite">
+    <h2 id="aTitle">Alert active</h2>
+    <p id="locStatus" class="status">Location not requested yet.</p>
+    <p><b>Step 1: Call for help.</b> Start with the first trusted contact. If they do not answer, return here and try another contact.</p>
+    <div id="alertBody"></div>
+    <button class="btn safe" id="safeBtn" type="button">I'm safe — cancel alert</button>
+  </section>
+
+  <!-- ===== My details (client) ===== -->
+  <section class="screen hidden" data-screen="details">
+    <h2>My details</h2>
+    <p class="small">Change your name, your phone number and your dependents. Each box has its own Save button.</p>
+    <div id="detailsEditor"></div>
+    <button class="btn secondary" id="goAddDep" type="button">Add a dependent</button>
+    <button class="btn" type="button" data-go="home">Back</button>
+  </section>
+
+  <!-- ===== Add a dependent (client) ===== -->
+  <section class="screen hidden" data-screen="addDep">
+    <h2>Add a dependent</h2>
+    <form id="addDepForm" novalidate>
+      <label for="ad_name">Dependent's full name</label>
+      <input id="ad_name" type="text" autocomplete="off" placeholder="Dependent's name">
+      <label for="ad_phone">Dependent's phone number (optional)</label>
+      <div class="phone-field">
+        <span class="phone-prefix" aria-hidden="true">+267</span>
+        <input id="ad_phone" type="tel" inputmode="numeric" autocomplete="off" placeholder="7X XXX XXX">
+      </div>
+      <button class="btn secondary" id="addDepBtn" type="submit">Save dependent</button>
+      <button class="btn" type="button" id="addDepBack">Back</button>
+    </form>
+  </section>
+
+  <!-- ===== Administrator home ===== -->
+  <section class="screen hidden" data-screen="adminHome">
+    <h2>Administrator</h2>
+    <p class="small">Choose what to manage.</p>
+    <button class="btn secondary" id="goAdminNumbers" type="button">Emergency numbers</button>
+    <button class="btn secondary" id="goAdminRegs" type="button">Registrations</button>
+  </section>
+
+  <!-- ===== Administrator: emergency numbers ===== -->
+  <section class="screen hidden" data-screen="adminNumbers">
+    <h2>Emergency numbers for everyone</h2>
+    <label for="adm_c_name">Name (for example, Police)</label>
+    <input id="adm_c_name" autocomplete="off" placeholder="Police">
+    <label for="adm_c_phone">Phone number</label>
+    <div class="phone-field">
+      <span class="phone-prefix" aria-hidden="true">+267</span>
+      <input id="adm_c_phone" type="tel" inputmode="numeric" autocomplete="off" placeholder="7X XXX XXX, or a short code like 999">
+    </div>
+    <button class="btn" id="admAdd" type="button">Add emergency number</button>
+    <div id="admList" aria-live="polite"></div>
+    <button class="btn big" id="admSave" type="button">Save for everyone</button>
+    <button class="btn" type="button" data-go="adminHome">Back</button>
+  </section>
+
+  <!-- ===== Administrator: registrations ===== -->
+  <section class="screen hidden" data-screen="adminRegs">
+    <h2>All registrations</h2>
+    <button class="btn secondary" id="admLoadAll" type="button">Load / refresh registrations</button>
+    <input id="admSearch" type="search" placeholder="Search by name or email" autocomplete="off">
+    <div id="admProfiles" aria-live="polite"></div>
+    <button class="btn" type="button" data-go="adminHome">Back</button>
+  </section>
+
+  <footer>
+    Offline support is limited to this page and resources cached by the browser. Calls, SMS, WhatsApp and remote alerts still require the relevant phone features and communication service. Location requires permission and may be unavailable indoors or offline.
+  </footer>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  const STORAGE_KEY = "panic-alert-test-contacts-v1";
+  let sirenAudio = null;
+  let sirenTimer = null;
+  let buzzTimer = null;
+  let latestMapLink = "";
+  let alertIsActive = false;
+
+  const $ = (id) => document.getElementById(id);
+  const escapeHTML = (value) => String(value == null ? "" : value).replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[ch]);
+
+  function normalizePhone(value) {
+    // Keep digits and a leading plus only; this is for links, not validation.
+    const trimmed = String(value || "").trim();
+    const digits = trimmed.replace(/\D/g, "");
+    return (trimmed.startsWith("+") ? "+" : "") + digits;
+  }
+
+  function readState() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      return {
+        personName: typeof saved.personName === "string" ? saved.personName : "",
+        message: typeof saved.message === "string" ? saved.message : "I may need help. Please try calling me and check on my safety.",
+        neighbours: Array.isArray(saved.neighbours) ? saved.neighbours : [],
+        numbers: Array.isArray(saved.numbers) ? saved.numbers : [],
+        alertMode: ["neighbours", "combined", "services"].includes(saved.alertMode) ? saved.alertMode : "neighbours"
+      };
+    } catch (e) {
+      return { personName: "", message: "I may need help. Please try calling me and check on my safety.", neighbours: [], numbers: [], alertMode: "neighbours" };
+    }
+  }
+
+  let state = readState();
+
+  // Agency (emergency) contacts: set only by the administrator, copied to everyone by default.
+  const AGENCY_CACHE_KEY = "panic-agency-contacts-v1";
+  function cleanAgency(list) {
+    return (Array.isArray(list) ? list : [])
+      .map((c) => ({ name: String((c && c.name) || "").trim() || "Emergency number", phone: String((c && c.phone) || "").trim() }))
+      .filter((c) => c.phone);
+  }
+  let agency = [];
+  try { agency = cleanAgency(JSON.parse(localStorage.getItem(AGENCY_CACHE_KEY) || "[]")); } catch (e) { agency = []; }
+  window.panicSetAgency = function (list) {
+    agency = cleanAgency(list);
+    try { localStorage.setItem(AGENCY_CACHE_KEY, JSON.stringify(agency)); } catch (e) {}
+    renderContactLists();
+    refreshMessageLinks();
+  };
+  window.panicBuildPhone = buildPhone;
+  // Used by the registration steps: copies the contacts entered there onto this device.
+  window.panicAddNeighbours = function (list, personName) {
+    (Array.isArray(list) ? list : []).forEach((n) => {
+      const phone = String((n && n.phone) || "").trim();
+      if (!phone || state.neighbours.some((x) => x.phone === phone)) return;
+      state.neighbours.push({ name: String((n && n.name) || "").trim() || "Trusted contact", phone: phone });
+    });
+    if (personName && !state.personName) {
+      state.personName = personName;
+      $("personName").value = personName;
+    }
+    saveState();
+    renderContactLists();
+  };
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+      alert("Your browser could not save these contacts. They may be lost when you close this page.");
+    }
+  }
+
+  function telHref(phone) {
+    return "tel:" + normalizePhone(phone);
+  }
+
+  function buildAlertMessage() {
+    const parts = [];
+    if (state.personName.trim()) parts.push("Alert from " + state.personName.trim() + ".");
+    parts.push(state.message.trim() || "I may need help. Please try calling me and check on my safety.");
+    if (latestMapLink) parts.push("My last location: " + latestMapLink);
+    return parts.join("\n\n");
+  }
+
+  function smsHref(contacts) {
+    // Short service codes (such as 999) cannot receive texts, so only full numbers are used here.
+    const phones = contacts.map((c) => normalizePhone(c.phone)).filter((ph) => ph.replace(/\D/g, "").length >= 7);
+    // SMS URI recipient syntax varies between operating systems and messaging apps.
+    const recipientString = phones.join(",");
+    const body = encodeURIComponent(buildAlertMessage());
+    return "sms:" + recipientString + "?body=" + body;
+  }
+
+  function renderContactLists() {
+    $("neighbourList").innerHTML = state.neighbours.length
+      ? "<h3>Trusted contacts</h3>" + state.neighbours.map((n, i) =>
+          '<div class="contact-row">' + escapeHTML(n.name) + " — " + escapeHTML(n.phone) +
+          ' <button class="btn" type="button" data-remove-neighbour="' + i + '">Remove</button></div>'
+        ).join("")
+      : '<p class="small">No trusted contacts added yet.</p>';
+
+    $("emergencyList").innerHTML = agency.length
+      ? "<h3>Emergency numbers (set by the administrator)</h3>" + agency.map((n) =>
+          '<div class="contact-row">' + escapeHTML(n.name) + " — " + escapeHTML(n.phone) + "</div>"
+        ).join("")
+      : '<p class="small">The administrator has not set any emergency numbers yet.</p>';
+  }
+
+  // Joins the fixed +267 prefix and the typed number into one string, e.g. "+26771234567".
+  // allowShort lets emergency service codes (e.g. 999) through without the prefix.
+  function buildPhone(raw, allowShort) {
+    let digits = String(raw || "").replace(/\D/g, "");
+    if (digits.startsWith("267") && digits.length >= 10) digits = digits.slice(3); // user typed 267 / +267 anyway
+    digits = digits.replace(/^0+/, "");
+    if (!digits) return "";
+    if (allowShort && digits.length < 7) return digits;
+    if (digits.length < 7 || digits.length > 8) return "";
+    return "+267" + digits;
+  }
+
+  function addContact(nameInput, phoneInput, collection, fallbackName, allowShort) {
+    const name = $(nameInput).value.trim() || fallbackName;
+    const phone = buildPhone($(phoneInput).value, allowShort);
+    if (!phone) {
+      alert("Please enter a valid phone number: 7 or 8 digits, without +267.");
+      return;
+    }
+    state[collection].push({ name, phone });
+    $(nameInput).value = "";
+    $(phoneInput).value = "";
+    saveState();
+    renderContactLists();
+  }
+
+  function makeButton(label, href, className) {
+    return '<a class="btn ' + className + '" href="' + escapeHTML(href) + '">' + escapeHTML(label) + "</a>";
+  }
+
+  function renderAlert() {
+    const contacts = state.neighbours;
+    const numbers = agency;
+    const allContacts = contacts.concat(numbers);
+    const mode = state.alertMode || "neighbours";
+    let html = "";
+
+    if (mode === "services") {
+      html += "<h3>Step 1: Contact an emergency service</h3>";
+      html += '<p>Choose the relevant service. The call opens in your phone dialler; you must place the call yourself.</p>';
+      if (numbers.length) {
+        html += numbers.map((n, i) => makeButton("Call service / number: " + n.name, telHref(n.phone), "big")).join("");
+        html += '<button class="btn secondary" id="serviceUnreachableBtn" type="button">The service could not be reached</button>';
+        html += '<div id="fallbackContacts" class="hidden"><h3>Next: Call a trusted contact</h3><p>Choose a trusted contact to call next. The app cannot detect call failure automatically; use this only after you confirm the service could not be reached.</p>';
+        html += contacts.length ? contacts.map((n) => makeButton("Call trusted contact: " + n.name, telHref(n.phone), "")).join("") : '<p class="note">No trusted contacts saved. Cancel the alert and add trusted contacts.</p>';
+        html += '</div>';
+      } else {
+        html += '<p class="note">The administrator has not set any emergency numbers yet. Cancel this screen and ask the administrator to add them.</p>';
+      }
+      if (contacts.length) {
+        html += '<details><summary>Trusted contacts (separate section)</summary>';
+        html += contacts.map((n) => makeButton("Call trusted contact: " + n.name, telHref(n.phone), "")).join("") + '</details>';
+      }
+    } else {
+      html += '<h3>Step 1: Call for help</h3><p>Calls open your phone dialler and require you to place the call.</p>';
+      if (contacts.length) {
+        html += makeButton("Call first: " + contacts[0].name, telHref(contacts[0].phone), "big");
+        if (contacts.length > 1) html += '<h3>Other trusted contacts</h3>' + contacts.slice(1).map((n) => makeButton("Call " + n.name, telHref(n.phone), "")).join("");
+      } else {
+        html += '<p class="note">No trusted contacts are registered. Cancel this screen and add contacts before relying on the app.</p>';
+      }
+      if (mode === "combined" && numbers.length) {
+        html += '<h3>Additional emergency contacts</h3>' + numbers.map((n) => makeButton("Call " + n.name, telHref(n.phone), "")).join("");
+      }
+    }
+
+    if (contacts.length) {
+      html += "<h3>WhatsApp (optional)</h3><p>These buttons open chats; they do not automatically send messages or start voice calls. Review before sending.</p>";
+      html += contacts.map((n) => {
+        const digits = normalizePhone(n.phone).replace(/\D/g, "");
+        const url = "https://wa.me/" + digits + "?text=" + encodeURIComponent(buildAlertMessage());
+        return makeButton("Open WhatsApp chat: " + n.name, url, "wa");
+      }).join("");
+    }
+
+    html += '<h3>SMS (optional)</h3><p>Review the recipients and message in your SMS app before sending.</p>';
+    html += makeButton("Prepare SMS to saved contacts", smsHref(allContacts), "");
+    html += '<p class="small">The app cannot confirm whether a call was answered or whether an SMS was delivered.</p>';
+    html += '<button class="btn" id="sirenBtn" type="button">Turn siren off</button>';
+
+    $("alertBody").innerHTML = html;
+    $("alertView").classList.remove("hidden");
+    $("setupView").classList.add("hidden");
+  }
+
+  function startSiren() {
+    stopSiren();
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) {
+        const context = new AudioContextClass();
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        oscillator.type = "sawtooth";
+        oscillator.frequency.value = 880;
+        gain.gain.value = 0.0001;
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+        oscillator.start();
+        sirenAudio = { context, oscillator, gain };
+        let loud = false;
+        sirenTimer = window.setInterval(() => {
+          if (!sirenAudio) return;
+          loud = !loud;
+          sirenAudio.oscillator.frequency.setTargetAtTime(loud ? 880 : 660, sirenAudio.context.currentTime, 0.03);
+          sirenAudio.gain.gain.setTargetAtTime(loud ? 0.08 : 0.0001, sirenAudio.context.currentTime, 0.03);
+        }, 350);
+      }
+    } catch (e) {
+      // Audio may be blocked by browser policy; the rest of the alert remains usable.
+    }
+
+    try {
+      if ("vibrate" in navigator) {
+        navigator.vibrate([500, 200, 500]);
+        buzzTimer = window.setInterval(() => navigator.vibrate([500, 200, 500]), 3000);
+      }
+    } catch (e) {}
+  }
+
+  function stopSiren() {
+    if (sirenTimer) window.clearInterval(sirenTimer);
+    if (buzzTimer) window.clearInterval(buzzTimer);
+    sirenTimer = null;
+    buzzTimer = null;
+    try { if ("vibrate" in navigator) navigator.vibrate(0); } catch (e) {}
+    if (sirenAudio) {
+      try {
+        sirenAudio.gain.gain.setTargetAtTime(0.0001, sirenAudio.context.currentTime, 0.02);
+        sirenAudio.oscillator.stop(sirenAudio.context.currentTime + 0.08);
+        sirenAudio.context.close();
+      } catch (e) {}
+      sirenAudio = null;
+    }
+    const sirenButton = $("sirenBtn");
+    if (sirenButton) sirenButton.textContent = "Siren off";
+  }
+
+  function failLocation() {
+    const status = $("locStatus");
+    if (status) status.textContent = "Location unavailable. You can still call contacts or prepare an SMS without it.";
+    refreshMessageLinks();
+  }
+
+  function refreshMessageLinks() {
+    // Re-rendering ensures any location obtained after the alert started is included.
+    if (alertIsActive) renderAlert();
+  }
+
+  function requestLocation() {
+    latestMapLink = "";
+    $("locStatus").textContent = "Finding your location…";
+    if (!navigator.geolocation) {
+      failLocation();
+      return;
+    }
+    try {
+      navigator.geolocation.getCurrentPosition((position) => {
+        const latitude = position.coords.latitude.toFixed(5);
+        const longitude = position.coords.longitude.toFixed(5);
+        latestMapLink = "https://maps.google.com/?q=" + latitude + "," + longitude;
+        $("locStatus").textContent = "Location found. It will be included in the prepared message. Check it before sending.";
+        refreshMessageLinks();
+      }, failLocation, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
+    } catch (e) {
+      failLocation();
+    }
+  }
+
+  function startAlert() {
+    state.personName = $("personName").value.trim();
+    state.message = $("customMessage").value.trim() || "I may need help. Please try calling me and check on my safety.";
+    state.alertMode = $("alertMode").value;
+    
+    saveState();
+    alertIsActive = true;
+    latestMapLink = "";
+    renderAlert();
+    startSiren();
+    requestLocation();
+  }
+
+  function cancelAlert() {
+    alertIsActive = false;
+    stopSiren();
+    $("alertView").classList.add("hidden");
+    $("setupView").classList.remove("hidden");
+    $("locStatus").textContent = "Location not requested yet.";
+  }
+
+  // Lets the screen router stop a running alert before it changes screens.
+  window.panicEndAlert = function () { if (alertIsActive) cancelAlert(); };
+
+  $("addNeighbour").addEventListener("click", () => addContact("neighbourName", "neighbourPhone", "neighbours", "Trusted contact", false));
+  $("startAlert").addEventListener("click", () => {
+    if (!state.neighbours.length && !agency.length) {
+      const proceed = confirm("No contacts are saved. Start the alert screen anyway?");
+      if (!proceed) return;
+    }
+    startAlert();
+  });
+  $("safeBtn").addEventListener("click", cancelAlert);
+  $("alertMode").value = state.alertMode;
+  $("alertMode").addEventListener("change", () => { state.alertMode = $("alertMode").value; saveState(); });
+
+  document.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const removeNeighbour = target.closest("[data-remove-neighbour]");
+    if (removeNeighbour) {
+      state.neighbours.splice(Number(removeNeighbour.dataset.removeNeighbour), 1);
+      saveState();
+      renderContactLists();
+    }
+    if (target.id === "sirenBtn") stopSiren();
+    if (target.id === "serviceUnreachableBtn") {
+      const fallback = $("fallbackContacts");
+      if (fallback) fallback.classList.remove("hidden");
+      target.textContent = "Trusted contacts shown below";
+      target.disabled = true;
+    }
+  });
+
+  $("personName").value = state.personName;
+  $("customMessage").value = state.message;
+  $("alertMode").value = state.alertMode;
+  renderContactLists();
+
+  // Register the root service worker when available. The site must be HTTPS.
+  if ("serviceWorker" in navigator && location.protocol === "https:") {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(() => {
+        // App remains usable online if service-worker registration fails.
+      });
+    });
+  }
+})();
+</script>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- Settings ----
+  const SUPABASE_URL = 'https://lgzpytpnpiatpayyzquv.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_mjwO-DikUakHlhuA1m0cIA_nAmJRElL';
+  const TABLE_NAME = 'dependents';
+  const ADMIN_EMAIL = 'kaelo9224@gmail.com';
+  const AGENCY_TABLE = 'agency_contacts';
+  const REGISTRY_TABLE = 'approved_registry';     // name-only list of approved people
+  const REGISTRY_NAME_COLUMN = 'name';
+  const REGISTRY_PHONE_COLUMN = '';               // keep '' so phone numbers are never public
+  const REGISTRY_ONLY_APPROVED = false;           // the view already contains approved people only
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (ch) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[ch]);
+  const build = (raw, allowShort) => (window.panicBuildPhone ? window.panicBuildPhone(raw, !!allowShort) : '');
+  const appUrl = () => location.origin + location.pathname;
+
+  function readJSON(key) { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; } }
+  function writeJSON(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {} }
+  function removeKey(key) { try { localStorage.removeItem(key); } catch (e) {} }
+
+  // ---- Supabase client ----
+  const isConfigured =
+    SUPABASE_URL.indexOf('your-project-id') === -1 &&
+    SUPABASE_ANON_KEY.indexOf('your-anon-key') === -1;
+  let client = null;
+  let authHooked = false;
+
+  function makeClient() {
+    try {
+      if (!client && window.supabase && isConfigured) {
+        client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+    } catch (e) {
+      console.error('Supabase init failed:', e);
+    }
+    if (client) hookAuth();
+    return !!client;
+  }
+
+  function notConnectedText() {
+    if (!isConfigured) return 'Not connected yet. This copy of the page has no Supabase URL and anon key. Upload the latest index.html.';
+    return 'Could not reach the sign-in service. Check your internet connection, then reload the page and try again.';
+  }
+
+  // ---- Messages ----
+  const bar = $('msgBar');
+  function say(text, kind) {
+    bar.textContent = text;
+    bar.className = kind || 'info';
+    bar.style.display = 'block';
+  }
+  function clearSay() { bar.style.display = 'none'; }
+
+  // ---- Screens: one panel at a time ----
+  const NO_USER_SCREENS = ['loading', 'login', 'signup', 'forgot', 'reset'];
+  let sessionEmail = '';
+
+  function go(name) {
+    if (window.panicEndAlert) window.panicEndAlert();
+    document.querySelectorAll('.screen').forEach((el) => el.classList.add('hidden'));
+    $('alertView').classList.add('hidden');
+    const el = document.querySelector('[data-screen="' + name + '"]');
+    if (!el) return;
+    el.classList.remove('hidden');
+    clearSay();
+    $('topUser').classList.toggle('hidden', !sessionEmail || NO_USER_SCREENS.indexOf(name) !== -1);
+    $('topEmail').textContent = sessionEmail;
+    window.scrollTo(0, 0);
+  }
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target instanceof Element ? e.target.closest('[data-go]') : null;
+    if (btn) go(btn.dataset.go);
+  });
+
+  async function busy(btn, fn) {
+    btn.disabled = true;
+    try { await fn(); } finally { btn.disabled = false; }
+  }
+
+  function authErrorText(err) {
+    const m = String((err && err.message) || '');
+    if (/not confirmed/i.test(m)) return 'Please confirm your email first. Check your inbox and spam folder for the link.';
+    if (/invalid login/i.test(m)) return 'Wrong email or password.';
+    if (/rate limit|too many|security purposes/i.test(m)) return 'Too many emails or attempts. Wait a few minutes and try again.';
+    if (/already registered|already been registered/i.test(m)) return 'That email already has an account. Sign in instead.';
+    if (/fetch|network/i.test(m)) return 'No connection. Check your internet and try again.';
+    return m || 'Something went wrong. Please try again.';
+  }
+
+  function validEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+
+  // ---- Who is signed in ----
+  const LAST_USER_KEY = 'panic-last-user-v1';   // lets the Panic screen open offline
+  const REG_KEY = 'panic-registered-v1';
+  let currentUid = null;
+  let recovering = false;
+
+  function handleSession(session, force) {
+    if (recovering && !force) return Promise.resolve();
+    const uid = session && session.user ? session.user.id : null;
+    if (!force && uid === currentUid) return Promise.resolve();
+    currentUid = uid;
+    return route(session);
+  }
+
+  function hookAuth() {
+    if (!client || authHooked) return;
+    authHooked = true;
+    client.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') { recovering = true; go('reset'); return; }
+      setTimeout(() => { handleSession(session); }, 0);
+    });
+  }
+
+  async function route(session) {
+    if (!session || !session.user) {
+      sessionEmail = '';
+      go('login');
+      return;
+    }
+    const email = String(session.user.email || '').toLowerCase();
+    sessionEmail = email;
+    const admin = email === ADMIN_EMAIL.toLowerCase();
+    writeJSON(LAST_USER_KEY, { email: email, admin: admin });
+    $('offlineNote').classList.add('hidden');
+
+    if (admin) {
+      go('adminHome');
+      loadAgency();
+      return;
+    }
+    let registered = true;
+    try {
+      const { data, error } = await client.from(TABLE_NAME).select('id').ilike('registered_by_email', email).limit(1);
+      if (error) throw error;
+      registered = (data || []).length > 0;
+      if (registered) writeJSON(REG_KEY, { email: email });
+    } catch (e) {
+      registered = true;   // cannot check (offline?): open the Panic screen rather than block it
+    }
+    if (!registered) { startWizard(); return; }
+    go('home');
+    loadAgency();
+  }
+
+  function offlineHome(email) {
+    sessionEmail = email;
+    $('offlineNote').classList.remove('hidden');
+    go('home');
+  }
+
+  async function init() {
+    if (!client && !makeClient()) {
+      const last = readJSON(LAST_USER_KEY);
+      if (last && last.email && !last.admin) { offlineHome(last.email); return; }
+      go('login');
+      say(notConnectedText(), 'err');
+      return;
+    }
+    let session = null;
+    let failed = false;
+    try {
+      const res = await client.auth.getSession();
+      session = res && res.data && res.data.session;
+      if (res && res.error) failed = true;
+    } catch (e) { failed = true; }
+    if (recovering) return;
+    if (session) { await handleSession(session, true); return; }
+    const last = readJSON(LAST_USER_KEY);
+    if (last && last.email && !last.admin && (failed || navigator.onLine === false)) { offlineHome(last.email); return; }
+    await handleSession(null, true);
+  }
+
+  // ---- Sign in / create account / reset ----
+  $('loginForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    busy($('loginBtn'), async () => {
+      if (!client && !makeClient()) return say(notConnectedText(), 'err');
+      const email = $('login_email').value.trim().toLowerCase();
+      const password = $('login_password').value;
+      if (!email || !password) return say('Enter your email and password.', 'err');
+      say('Signing in…', 'info');
+      try {
+        const { data, error } = await client.auth.signInWithPassword({ email: email, password: password });
+        if (error) return say(authErrorText(error), 'err');
+        $('login_password').value = '';
+        await handleSession(data && data.session);
+      } catch (err) {
+        say(authErrorText(err), 'err');
+      }
+    });
+  });
+
+  $('signupForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    busy($('signupBtn'), async () => {
+      if (!client && !makeClient()) return say(notConnectedText(), 'err');
+      const email = $('su_email').value.trim().toLowerCase();
+      const pw = $('su_password').value;
+      if (!validEmail(email)) return say('Enter a valid email address.', 'err');
+      if (pw.length < 6) return say('Use a password of 6 or more characters.', 'err');
+      if (pw !== $('su_password2').value) return say('The two passwords do not match.', 'err');
+      say('Creating your account…', 'info');
+      try {
+        const { data, error } = await client.auth.signUp({ email: email, password: pw, options: { emailRedirectTo: appUrl() } });
+        if (error) return say(authErrorText(error), 'err');
+        $('su_password').value = '';
+        $('su_password2').value = '';
+        if (data && data.session) { await handleSession(data.session); return; }
+        $('login_email').value = email;
+        go('login');
+        say('Account created. Check your email and tap the confirmation link, then sign in here.', 'ok');
+      } catch (err) {
+        say(authErrorText(err), 'err');
+      }
+    });
+  });
+
+  $('forgotForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    busy($('forgotBtn'), async () => {
+      if (!client && !makeClient()) return say(notConnectedText(), 'err');
+      const email = $('fg_email').value.trim().toLowerCase();
+      if (!validEmail(email)) return say('Enter the email of your account.', 'err');
+      say('Sending…', 'info');
+      try {
+        const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: appUrl() });
+        if (error) return say(authErrorText(error), 'err');
+        say('If that email has an account, a reset link is on its way. Check your inbox and spam folder.', 'ok');
+      } catch (err) {
+        say(authErrorText(err), 'err');
+      }
+    });
+  });
+
+  $('resetForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    busy($('resetBtn'), async () => {
+      const pw = $('rs_password').value;
+      if (pw.length < 6) return say('Use a password of 6 or more characters.', 'err');
+      if (pw !== $('rs_password2').value) return say('The two passwords do not match.', 'err');
+      say('Saving…', 'info');
+      try {
+        const { error } = await client.auth.updateUser({ password: pw });
+        if (error) return say(authErrorText(error), 'err');
+        $('rs_password').value = '';
+        $('rs_password2').value = '';
+        recovering = false;
+        const res = await client.auth.getSession();
+        await handleSession(res && res.data && res.data.session, true);
+        say('Your password was changed.', 'ok');
+      } catch (err) {
+        say(authErrorText(err), 'err');
+      }
+    });
+  });
+
+  $('signOutBtn').addEventListener('click', async () => {
+    try { if (client) await client.auth.signOut(); } catch (e) {}
+    removeKey(LAST_USER_KEY);
+    currentUid = null;
+    sessionEmail = '';
+    go('login');
+  });
+
+  // ---- Registration in steps: details -> trusted contacts -> dependents (save) ----
+  const wiz = { name: '', phone: '', nb: [], deps: [] };
+
+  function renderWizList(elId, items, kind) {
+    $(elId).innerHTML = items.map((it, i) =>
+      '<div class="contact-row">' + esc(it.name) + (it.phone ? ' — ' + esc(it.phone) : '') +
+      ' <button class="btn" type="button" data-wiz-remove="' + kind + '" data-i="' + i + '">Remove</button></div>').join('');
+  }
+
+  function startWizard() {
+    wiz.name = ''; wiz.phone = ''; wiz.nb = []; wiz.deps = [];
+    ['wiz_name', 'wiz_phone', 'wiz_nb_name', 'wiz_nb_phone', 'dep_name', 'dep_phone'].forEach((id) => { $(id).value = ''; });
+    $('wiz_email').value = sessionEmail;
+    renderWizList('wizNbList', wiz.nb, 'nb');
+    renderWizList('wizDepList', wiz.deps, 'dep');
+    go('wiz1');
+  }
+
+  $('wizForm1').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = $('wiz_name').value.trim();
+    if (!name) return say('Enter your full name.', 'err');
+    const phone = build($('wiz_phone').value, false);
+    if (!phone) return say('Enter your phone number: 7 or 8 digits, without +267.', 'err');
+    wiz.name = name;
+    wiz.phone = phone;
+    go('wiz2');
+  });
+
+  // Adds what is typed in the contact boxes to the list. Returns false when something typed is not valid.
+  function wizAddNeighbour() {
+    const name = $('wiz_nb_name').value.trim();
+    const raw = $('wiz_nb_phone').value.trim();
+    if (!name && !raw) return true;
+    const phone = build(raw, false);
+    if (!phone) { say('Enter a valid contact phone number: 7 or 8 digits, without +267.', 'err'); return false; }
+    wiz.nb.push({ name: name || 'Trusted contact', phone: phone });
+    $('wiz_nb_name').value = '';
+    $('wiz_nb_phone').value = '';
+    renderWizList('wizNbList', wiz.nb, 'nb');
+    return true;
+  }
+
+  function wizAddDependent() {
+    const name = $('dep_name').value.trim();
+    const raw = $('dep_phone').value.trim();
+    if (!name && !raw) return true;
+    if (!name) { say("Enter the dependent's name.", 'err'); return false; }
+    let phone = '';
+    if (raw) {
+      phone = build(raw, false);
+      if (!phone) { say("Enter a valid phone number for the dependent: 7 or 8 digits, without +267, or leave it blank.", 'err'); return false; }
+    }
+    wiz.deps.push({ name: name, phone: phone });
+    $('dep_name').value = '';
+    $('dep_phone').value = '';
+    renderWizList('wizDepList', wiz.deps, 'dep');
+    return true;
+  }
+
+  $('wizAddNb').addEventListener('click', () => {
+    clearSay();
+    const typed = $('wiz_nb_name').value.trim() || $('wiz_nb_phone').value.trim();
+    if (!typed) return say('Type a contact name and phone number first.', 'err');
+    wizAddNeighbour();
+  });
+  $('wizAddDep').addEventListener('click', () => {
+    clearSay();
+    const typed = $('dep_name').value.trim() || $('dep_phone').value.trim();
+    if (!typed) return say("Type the dependent's name first.", 'err');
+    wizAddDependent();
+  });
+  document.addEventListener('click', (e) => {
+    const btn = e.target instanceof Element ? e.target.closest('[data-wiz-remove]') : null;
+    if (!btn) return;
+    const list = btn.dataset.wizRemove === 'nb' ? wiz.nb : wiz.deps;
+    list.splice(Number(btn.dataset.i), 1);
+    renderWizList('wizNbList', wiz.nb, 'nb');
+    renderWizList('wizDepList', wiz.deps, 'dep');
+  });
+
+  $('wizForm2').addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!wizAddNeighbour()) return;
+    go('wiz3');
+  });
+
+  $('wizForm3').addEventListener('submit', (e) => {
+    e.preventDefault();
+    busy($('wizSaveBtn'), async () => {
+      if (!wizAddDependent()) return;
+      if (!client && !makeClient()) return say(notConnectedText(), 'err');
+      // One row per dependent, all under the same name and email. The contacts are stored with the first row.
+      const list = wiz.deps.length ? wiz.deps : [{ name: '', phone: '' }];
+      const rows = list.map((d, i) => ({
+        registered_by_name: wiz.name,
+        registered_by_email: sessionEmail,
+        registered_by_phone: wiz.phone,
+        dependent_name: d.name,
+        dependent_phone: d.phone,
+        dependent_relationship: '',
+        neighbours: i === 0 ? wiz.nb : [],
+        status: 'pending'
+      }));
+      say('Saving…', 'info');
+      try {
+        const { error } = await client.from(TABLE_NAME).insert(rows);
+        if (error) throw error;
+        if (window.panicAddNeighbours) window.panicAddNeighbours(wiz.nb, wiz.name);
+        writeJSON(REG_KEY, { email: sessionEmail });
+        go('home');
+        say('Registration saved. It is pending approval.', 'ok');
+      } catch (err) {
+        console.error('Registration failed:', err);
+        say(dbErrorText(err), 'err');
+      }
+    });
+  });
+
+  // Maps database errors to something a person can act on.
+  function dbErrorText(err) {
+    if (err && err.code === '42501') return 'Not allowed. You can only change your own details.';
+    if (err && (err.code === 'PGRST204' || err.code === '42703')) return 'The database is missing a column. Ask the administrator to run the latest SQL setup.';
+    if (err && err.code === '42P01') return 'A database table is missing. Ask the administrator to run the latest SQL setup.';
+    if (err && err.message && /fetch|network/i.test(err.message)) return 'No connection. Check your internet and try again.';
+    return 'Could not save. Please try again.';
+  }
+
+  // ---- Shared helpers for the edit boxes ----
+  function phoneToInput(p) {
+    let d = String(p || '').replace(/\D/g, '');
+    if (d.startsWith('267') && d.length >= 10) d = d.slice(3);
+    return d;
+  }
+  function phoneInputHTML(f, value) {
+    return '<div class="phone-field"><span class="phone-prefix" aria-hidden="true">+267</span>' +
+      '<input data-f="' + f + '" type="tel" inputmode="numeric" autocomplete="off" value="' + esc(phoneToInput(value)) + '"></div>';
+  }
+  function textInputHTML(f, value, type) {
+    return '<input data-f="' + f + '" type="' + (type || 'text') + '" autocomplete="off" value="' + esc(value) + '">';
+  }
+  // Returns null when something was typed but is not a valid number; '' when blank.
+  function readPhone(card, f) {
+    const raw = card.querySelector('[data-f="' + f + '"]').value.trim();
+    if (!raw) return '';
+    return build(raw, false) || null;
+  }
+  function readText(card, f) { return card.querySelector('[data-f="' + f + '"]').value.trim(); }
+
+  // ---- My details (client) ----
+  let myRows = [];
+
+  $('goDetails').addEventListener('click', openDetails);
+
+  async function openDetails() {
+    go('details');
+    const box = $('detailsEditor');
+    box.innerHTML = '<p class="small">Loading…</p>';
+    if (!client && !makeClient()) { box.innerHTML = ''; return say(notConnectedText(), 'err'); }
+    try {
+      const { data, error } = await client.from(TABLE_NAME).select('*').ilike('registered_by_email', sessionEmail).order('created_at');
+      if (error) throw error;
+      myRows = data || [];
+      renderDetails();
+    } catch (err) {
+      console.error('Could not load your details:', err);
+      box.innerHTML = '<p class="note small">Could not load your details. Check your connection and try again.</p>';
+    }
+  }
+
+  function renderDetails() {
+    const box = $('detailsEditor');
+    if (!myRows.length) {
+      box.innerHTML = '<p class="note small">No registration was found for this account.</p>';
+      return;
+    }
+    const first = myRows[0];
+    let html = '<div class="profile-card" id="meCard"><h3>You</h3>' +
+      '<label>Your full name</label>' + textInputHTML('registered_by_name', first.registered_by_name) +
+      '<label>Your phone number</label>' + phoneInputHTML('registered_by_phone', first.registered_by_phone) +
+      '<button class="btn secondary" type="button" data-save-me="1">Save my details</button></div>';
+    const deps = myRows.filter((r) => r.dependent_name || r.dependent_phone);
+    html += '<h3>Your dependents</h3>';
+    html += deps.length ? deps.map((r) =>
+      '<div class="profile-card" data-id="' + esc(r.id) + '">' +
+      '<p class="tag">Status: ' + esc(r.status || 'pending') + '</p>' +
+      '<label>Dependent\'s full name</label>' + textInputHTML('dependent_name', r.dependent_name) +
+      '<label>Dependent\'s phone number</label>' + phoneInputHTML('dependent_phone', r.dependent_phone) +
+      '<button class="btn secondary" type="button" data-save-dep="1">Save dependent</button></div>'
+    ).join('') : '<p class="small">No dependents yet.</p>';
+    box.innerHTML = html;
+  }
+
+  $('detailsEditor').addEventListener('click', async (e) => {
+    const meBtn = e.target.closest('[data-save-me]');
+    const depBtn = e.target.closest('[data-save-dep]');
+    if (!meBtn && !depBtn) return;
+    const card = e.target.closest('.profile-card');
+    let patch;
+    if (meBtn) {
+      const phone = readPhone(card, 'registered_by_phone');
+      if (phone === null) return say('Enter a valid phone number: 7 or 8 digits, without +267.', 'err');
+      const name = readText(card, 'registered_by_name');
+      if (!name) return say('Your name cannot be empty.', 'err');
+      patch = { registered_by_name: name, registered_by_phone: phone };
+    } else {
+      const phone = readPhone(card, 'dependent_phone');
+      if (phone === null) return say('Enter a valid phone number: 7 or 8 digits, without +267.', 'err');
+      patch = { dependent_name: readText(card, 'dependent_name'), dependent_phone: phone };
+    }
+    const btn = meBtn || depBtn;
+    btn.disabled = true;
+    say('Saving…', 'info');
+    try {
+      // "You" updates every row made with this email; a dependent updates one row.
+      let q = client.from(TABLE_NAME).update(patch);
+      q = meBtn ? q.ilike('registered_by_email', sessionEmail) : q.eq('id', card.dataset.id);
+      const { error } = await q;
+      if (error) throw error;
+      myRows.forEach((r) => {
+        if (meBtn || String(r.id) === card.dataset.id) Object.assign(r, patch);
+      });
+      say('Saved.', 'ok');
+    } catch (err) {
+      console.error('Save failed:', err);
+      say(dbErrorText(err), 'err');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  $('goAddDep').addEventListener('click', () => {
+    $('ad_name').value = '';
+    $('ad_phone').value = '';
+    go('addDep');
+  });
+  $('addDepBack').addEventListener('click', () => go('details'));
+
+  $('addDepForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    busy($('addDepBtn'), async () => {
+      const name = $('ad_name').value.trim();
+      const raw = $('ad_phone').value.trim();
+      if (!name) return say("Enter the dependent's name.", 'err');
+      let phone = '';
+      if (raw) {
+        phone = build(raw, false);
+        if (!phone) return say('Enter a valid phone number: 7 or 8 digits, without +267, or leave it blank.', 'err');
+      }
+      const first = myRows[0] || {};
+      const empty = myRows.find((r) => !r.dependent_name && !r.dependent_phone);
+      say('Saving…', 'info');
+      try {
+        let res;
+        if (empty) {
+          res = await client.from(TABLE_NAME).update({ dependent_name: name, dependent_phone: phone }).eq('id', empty.id);
+        } else {
+          res = await client.from(TABLE_NAME).insert([{
+            registered_by_name: first.registered_by_name || '',
+            registered_by_email: sessionEmail,
+            registered_by_phone: first.registered_by_phone || '',
+            dependent_name: name,
+            dependent_phone: phone,
+            dependent_relationship: '',
+            neighbours: [],
+            status: 'pending'
+          }]);
+        }
+        if (res.error) throw res.error;
+        await openDetails();
+        say('Dependent saved.', 'ok');
+      } catch (err) {
+        console.error('Add dependent failed:', err);
+        say(dbErrorText(err), 'err');
+      }
+    });
+  });
+
+  // ---- Panic home helpers: emergency numbers for everyone ----
+  // Every device fetches the administrator's list. An empty or missing list is a valid answer.
+  async function loadAgency() {
+    if (!client) return null;
+    try {
+      const { data, error } = await client.from(AGENCY_TABLE).select('contacts').eq('id', 1).maybeSingle();
+      if (error) throw error;
+      const list = data && Array.isArray(data.contacts) ? data.contacts : [];
+      if (window.panicSetAgency) window.panicSetAgency(list);
+      return list;
+    } catch (err) {
+      // Offline or not set up yet: the last saved copy on this device keeps working.
+      console.error('Could not load agency contacts:', err);
+      return null;
+    }
+  }
+  window.addEventListener('online', loadAgency);
+
+  // ---- Administrator: emergency numbers ----
+  let adminList = [];
+
+  function renderAdminList() {
+    $('admList').innerHTML = adminList.length
+      ? adminList.map((c, i) => '<div class="contact-row">' + esc(c.name) + ' — ' + esc(c.phone) +
+          ' <button class="btn" type="button" data-adm-remove="' + i + '">Remove</button></div>').join('')
+      : '<p class="small">No emergency numbers yet.</p>';
+  }
+
+  $('goAdminNumbers').addEventListener('click', async () => {
+    go('adminNumbers');
+    $('admList').innerHTML = '<p class="small">Loading…</p>';
+    $('admSave').disabled = true;
+    const list = await loadAgency();
+    if (list === null) {
+      adminList = [];
+      renderAdminList();
+      say('Could not load the current numbers, so saving is switched off to protect them. Check the connection and the database setup, then try again.', 'err');
+      return;
+    }
+    adminList = list.slice();
+    renderAdminList();
+    $('admSave').disabled = false;
+  });
+
+  $('admAdd').addEventListener('click', () => {
+    const name = $('adm_c_name').value.trim() || 'Emergency number';
+    const phone = build($('adm_c_phone').value, true);
+    if (!phone) return say('Enter a valid number: 7 or 8 digits without +267, or a short code like 999.', 'err');
+    adminList.push({ name: name, phone: phone });
+    $('adm_c_name').value = '';
+    $('adm_c_phone').value = '';
+    clearSay();
+    renderAdminList();
+  });
+
+  $('admList').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-adm-remove]');
+    if (!btn) return;
+    adminList.splice(Number(btn.dataset.admRemove), 1);
+    renderAdminList();
+  });
+
+  $('admSave').addEventListener('click', async () => {
+    if (!client) return say(notConnectedText(), 'err');
+    $('admSave').disabled = true;
+    say('Saving…', 'info');
+    try {
+      const { error } = await client.from(AGENCY_TABLE).upsert({ id: 1, contacts: adminList, updated_at: new Date().toISOString() });
+      if (error) throw error;
+      if (window.panicSetAgency) window.panicSetAgency(adminList);
+      say('Saved. Everyone gets these emergency numbers by default.', 'ok');
+    } catch (err) {
+      console.error('Save failed:', err);
+      say(err && err.code === '42501'
+        ? 'Not allowed. Check that you are signed in as the administrator.'
+        : (err && err.code === '42P01' ? 'The emergency numbers table is missing. Run the latest SQL setup first.' : 'Could not save. Please try again.'), 'err');
+    } finally {
+      $('admSave').disabled = false;
+    }
+  });
+
+  // ---- Administrator: registrations ----
+  const STATUSES = ['pending', 'approved', 'rejected'];
+  let allProfiles = [];
+
+  $('goAdminRegs').addEventListener('click', () => { go('adminRegs'); loadAllProfiles(); });
+  $('admLoadAll').addEventListener('click', loadAllProfiles);
+  $('admSearch').addEventListener('input', renderAllProfiles);
+
+  function renderAllProfiles() {
+    const q = $('admSearch').value.trim().toLowerCase();
+    const rows = allProfiles.filter((r) => !q ||
+      String(r.registered_by_name || '').toLowerCase().includes(q) ||
+      String(r.registered_by_email || '').toLowerCase().includes(q) ||
+      String(r.dependent_name || '').toLowerCase().includes(q));
+    $('admProfiles').innerHTML = rows.length
+      ? rows.map((r) =>
+        '<div class="profile-card" data-id="' + esc(r.id) + '">' +
+        '<label>Registrant name</label>' + textInputHTML('registered_by_name', r.registered_by_name) +
+        '<label>Registrant email</label>' + textInputHTML('registered_by_email', r.registered_by_email, 'email') +
+        '<label>Registrant phone</label>' + phoneInputHTML('registered_by_phone', r.registered_by_phone) +
+        '<label>Dependent name</label>' + textInputHTML('dependent_name', r.dependent_name) +
+        '<label>Dependent phone</label>' + phoneInputHTML('dependent_phone', r.dependent_phone) +
+        (Array.isArray(r.neighbours) && r.neighbours.length
+          ? '<p class="small">Trusted contacts: ' + r.neighbours.map((n) => esc(n.name) + ' — ' + esc(n.phone)).join('; ') + '</p>' : '') +
+        '<label>Status</label><select data-f="status">' +
+          STATUSES.map((st) => '<option value="' + st + '"' + ((r.status || 'pending') === st ? ' selected' : '') + '>' + st + '</option>').join('') +
+        '</select>' +
+        '<button class="btn secondary" type="button" data-adm-save="1">Save this registration</button></div>'
+      ).join('')
+      : '<p class="small">No registrations found.</p>';
+  }
+
+  async function loadAllProfiles() {
+    if (!client) return say(notConnectedText(), 'err');
+    say('Loading registrations…', 'info');
+    try {
+      const { data, error } = await client.from(TABLE_NAME).select('*').order('registered_by_name').limit(1000);
+      if (error) throw error;
+      allProfiles = data || [];
+      renderAllProfiles();
+      clearSay();
+    } catch (err) {
+      console.error('Could not load registrations:', err);
+      say('Could not load registrations. Check the SQL setup and your connection.', 'err');
+    }
+  }
+
+  $('admProfiles').addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-adm-save]');
+    if (!btn) return;
+    const card = btn.closest('.profile-card');
+    const rp = readPhone(card, 'registered_by_phone');
+    const dp = readPhone(card, 'dependent_phone');
+    if (rp === null || dp === null) return say('Enter valid phone numbers: 7 or 8 digits, without +267.', 'err');
+    const name = readText(card, 'registered_by_name');
+    const email = readText(card, 'registered_by_email').toLowerCase();
+    if (!name || !email) return say('The registrant name and email cannot be empty.', 'err');
+    const patch = {
+      registered_by_name: name,
+      registered_by_email: email,
+      registered_by_phone: rp,
+      dependent_name: readText(card, 'dependent_name'),
+      dependent_phone: dp,
+      status: card.querySelector('[data-f="status"]').value
+    };
+    btn.disabled = true;
+    say('Saving…', 'info');
+    try {
+      const { error } = await client.from(TABLE_NAME).update(patch).eq('id', card.dataset.id);
+      if (error) throw error;
+      const row = allProfiles.find((r) => String(r.id) === card.dataset.id);
+      if (row) Object.assign(row, patch);
+      say('Saved.', 'ok');
+    } catch (err) {
+      console.error('Admin save failed:', err);
+      say(dbErrorText(err), 'err');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ---- Neighbour name suggestions on the Panic screen ----
+  // ---- Neighbour name suggestions from registered people ----
+  const REGISTRY_CACHE_KEY = 'panic-registry-names-v1';
+  const nbName = document.getElementById('neighbourName');
+  const nbPhone = document.getElementById('neighbourPhone');
+  const nbList = document.getElementById('nbSuggest');
+  let registry = [];
+  let matches = [];
+  let activeIdx = -1;
+
+  try {
+    const cached = JSON.parse(localStorage.getItem(REGISTRY_CACHE_KEY) || '[]');
+    if (Array.isArray(cached)) registry = cached;
+  } catch (e) {}
+
+  async function loadRegistry() {
+    if (!client) return;
+    const cols = REGISTRY_PHONE_COLUMN ? REGISTRY_NAME_COLUMN + ',' + REGISTRY_PHONE_COLUMN : REGISTRY_NAME_COLUMN;
+    try {
+      let query = client.from(REGISTRY_TABLE).select(cols).limit(1000);
+      if (REGISTRY_ONLY_APPROVED) query = query.eq('status', 'approved');
+      const { data, error } = await query;
+      if (error) throw error;
+      const seen = new Set();
+      const out = [];
+      (data || []).forEach((row) => {
+        const name = String(row[REGISTRY_NAME_COLUMN] || '').trim();
+        if (!name) return;
+        const phone = REGISTRY_PHONE_COLUMN ? String(row[REGISTRY_PHONE_COLUMN] || '').trim() : '';
+        const key = name.toLowerCase() + '|' + phone;
+        if (seen.has(key)) return;
+        seen.add(key);
+        out.push({ name, phone });
+      });
+      out.sort((a, b) => a.name.localeCompare(b.name));
+      registry = out;
+      try { localStorage.setItem(REGISTRY_CACHE_KEY, JSON.stringify(registry)); } catch (e) {}
+    } catch (err) {
+      // Typing a name by hand still works; suggestions just come from the last saved list.
+      console.error('Could not load registered names:', err);
+    }
+  }
+
+  function hideSuggestions() {
+    nbList.classList.add('hidden');
+    nbList.innerHTML = '';
+    nbName.setAttribute('aria-expanded', 'false');
+    nbName.removeAttribute('aria-activedescendant');
+    matches = [];
+    activeIdx = -1;
+  }
+
+  function setActive(i) {
+    activeIdx = i;
+    Array.prototype.forEach.call(nbList.children, (li, n) => li.setAttribute('aria-selected', n === i ? 'true' : 'false'));
+    if (i >= 0) nbName.setAttribute('aria-activedescendant', 'nbOpt' + i);
+    else nbName.removeAttribute('aria-activedescendant');
+  }
+
+  function showSuggestions() {
+    const q = nbName.value.trim().toLowerCase();
+    if (q.length < 2) return hideSuggestions();
+    matches = registry
+      .filter((r) => r.name.toLowerCase().includes(q))
+      .sort((a, b) => (b.name.toLowerCase().startsWith(q) ? 1 : 0) - (a.name.toLowerCase().startsWith(q) ? 1 : 0))
+      .slice(0, 8);
+    if (!matches.length) return hideSuggestions();
+    nbList.innerHTML = '';
+    matches.forEach((r, i) => {
+      const li = document.createElement('li');
+      li.id = 'nbOpt' + i;
+      li.setAttribute('role', 'option');
+      li.setAttribute('aria-selected', 'false');
+      li.dataset.i = String(i);
+      li.textContent = r.name;
+      if (r.phone) {
+        const sub = document.createElement('span');
+        sub.className = 'sub';
+        sub.textContent = r.phone;
+        li.appendChild(sub);
+      }
+      nbList.appendChild(li);
+    });
+    nbList.classList.remove('hidden');
+    nbName.setAttribute('aria-expanded', 'true');
+    activeIdx = -1;
+  }
+
+  function chooseSuggestion(i) {
+    const r = matches[i];
+    if (!r) return;
+    nbName.value = r.name;
+    if (r.phone) {
+      let digits = r.phone.replace(/\D/g, '');
+      if (digits.startsWith('267') && digits.length >= 10) digits = digits.slice(3);
+      nbPhone.value = digits.replace(/^0+/, '');
+    }
+    hideSuggestions();
+    nbPhone.focus();
+  }
+
+  if (nbName && nbList && nbPhone) {
+    nbName.addEventListener('input', showSuggestions);
+    nbName.addEventListener('focus', showSuggestions);
+    nbName.addEventListener('blur', () => setTimeout(hideSuggestions, 150));
+    nbName.addEventListener('keydown', (e) => {
+      if (nbList.classList.contains('hidden')) return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); setActive((activeIdx + 1) % matches.length); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setActive((activeIdx - 1 + matches.length) % matches.length); }
+      else if (e.key === 'Enter' && activeIdx >= 0) { e.preventDefault(); chooseSuggestion(activeIdx); }
+      else if (e.key === 'Escape') hideSuggestions();
+    });
+    // pointerdown + preventDefault keeps the input focused so the tap registers before blur hides the list
+    nbList.addEventListener('pointerdown', (e) => {
+      const li = e.target.closest('li');
+      if (!li) return;
+      e.preventDefault();
+      chooseSuggestion(Number(li.dataset.i));
+    });
+    const addBtn = document.getElementById('addNeighbour');
+    if (addBtn) addBtn.addEventListener('click', hideSuggestions);
+    loadRegistry();
+  }
+
+  // ---- Start ----
+  makeClient();
+  if (!client && isConfigured && !window.supabase) {
+    // The main copy of the Supabase library did not load: try a second source.
+    const backup = document.createElement('script');
+    backup.src = 'https://unpkg.com/@supabase/supabase-js@2';
+    backup.onload = () => { makeClient(); init().then(() => { loadRegistry(); }); };
+    backup.onerror = () => { init(); };
+    document.head.appendChild(backup);
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>
