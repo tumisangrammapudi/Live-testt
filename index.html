@@ -247,9 +247,17 @@
       </div>
       <button class="btn" id="wizAddDep" type="button">Add this dependent</button>
       <div id="wizDepList" aria-live="polite"></div>
-      <button class="btn secondary" id="wizSaveBtn" type="submit">Save registration</button>
+      <button class="btn secondary" id="wizSaveBtn" type="submit">Finish</button>
       <button class="btn" type="button" data-go="wiz2">Back</button>
     </form>
+  </section>
+
+  <!-- ===== Registration complete ===== -->
+  <section class="screen hidden" data-screen="wizDone">
+    <div class="wiz-progress" aria-hidden="true"><span class="on"></span><span class="on"></span><span class="on"></span></div>
+    <h2>Registration complete</h2>
+    <p id="wizDoneText">Your details, trusted contacts and dependents are saved. Your registration is now waiting for approval.</p>
+    <button class="btn secondary" id="wizDoneBtn" type="button">Go to my Panic screen</button>
   </section>
 
   <!-- ===== Home: the Panic screen ===== -->
@@ -1099,8 +1107,11 @@
         if (error) throw error;
         if (window.panicAddNeighbours) window.panicAddNeighbours(wiz.nb, wiz.name);
         writeJSON(REG_KEY, { email: sessionEmail });
-        go('home');
-        say('Registration saved. It is pending approval.', 'ok');
+        $('wizDoneText').textContent = 'Thank you, ' + wiz.name + '. Your details' +
+          (wiz.nb.length ? ', ' + wiz.nb.length + ' trusted contact' + (wiz.nb.length === 1 ? '' : 's') : '') +
+          (wiz.deps.length ? ' and ' + wiz.deps.length + ' dependent' + (wiz.deps.length === 1 ? '' : 's') : '') +
+          ' are saved. Your registration is now waiting for approval.';
+        go('wizDone');
       } catch (err) {
         console.error('Registration failed:', err);
         say(dbErrorText(err), 'err');
@@ -1140,6 +1151,8 @@
 
   // ---- My details (client) ----
   let myRows = [];
+
+  $('wizDoneBtn').addEventListener('click', () => { go('home'); loadAgency(); });
 
   $('goDetails').addEventListener('click', openDetails);
 
